@@ -1,0 +1,1123 @@
+#include <gb/gb.h>
+#include <stdio.h>
+#include <rand.h>
+#include "types.h"
+
+#include "../Resouces/minigames_0.c"
+#include "../Resouces/mingame_title_map.c"
+#include "../Resouces/game_title_map.c"
+#include "../Resouces/building_00.c"
+#include "../Resouces/green_sqaure.c"
+#include "../Resouces/victory_screen.c"
+#include "../Resouces/soviet_symbol_big.c"
+#include "../Resouces/game_over.c"
+#include "../Resouces/building_background_00.c"
+#include "../Resouces/block_game_background.c"
+
+#define MAX_X 160
+#define MAX_Y 144
+
+#define MIDDLE_X MAX_X / 2
+#define MIDDLE_Y MAX_Y / 2
+
+#define MIDDLE_X_8x8 (MAX_X / 2) + 4
+#define MIDDLE_Y_8x8 (MAX_Y / 2) + 4
+
+#define INVINCIBILITY_TIME 60 
+
+#define NUMBER_OF_MINIGAMES 9
+
+// ENEMY_NUMBERS
+#define NUMBER_OF_DEVILS 2
+#define NUMBER_OF_SMALL_ENEMIES 5
+
+// TILES
+#define PLAYER_PLAIN_FACE_TILE 0
+#define PLAYER_SAD_FACE_TILE 37
+#define PLAYER_SCREAMING_FACE_TILE 55
+#define PLAYER_SCREAMING_SELECTED_TILE 60
+
+#define GOAL_FLAG_START_TILE 1
+#define GOAL_FLAG_BOTTOM_TILE 2
+
+#define ALPHABET_START_TILE 3
+#define DIGIT_START_TILE 39
+
+#define BULLET_TILE 38
+
+#define PROGRESS_BAR_EMPTY_END 39
+#define PROGRESS_BAR_EMPTY_MIDDLE 40
+#define PROGRESS_BAR_FILLED_END 41
+#define PROGRESS_BAR_FILLED_MIDDLE 42
+
+#define SPACE_SHIP_TOP_TILE 62
+#define SPACE_SHIP_MIDDLE_TILE 61
+#define SPACE_SHIP_BOTTOM_OFF_TILE 63
+#define SPACE_SHIP_BOTTOM_ON_A_TILE 80
+#define SPACE_SHIP_BOTTOM_ON_B_TILE 81
+
+#define PLAYER_IDLE_TILE 0
+#define PLAYER_SHOOT_TILE 1
+#define PLAYER_DAMAGE_TILE 2
+
+#define VODKA_BOTTLE_TILE 49 
+#define SOVIET_SYMBOL_TILE 50
+
+#define TANK_TOP_LEFT_TILE 84
+#define TANK_TOP_RIGHT_TILE 86
+#define TANK_BOTTOM_LEFT_TILE 85
+#define TANK_BOTTOM_RIGHT_TILE 87
+
+#define FLAG_POLE_TILE 90
+#define FLAG_MIDDLE_TILE 89
+
+#define BUTTON_UP_TOP_LEFT_TILE 88
+#define BUTTON_DOWN_TOP_LEFT_TILE 91
+#define HAND_TILE 83
+
+#define BRICK_TILE 51
+#define BRICK_WINDOW_TILE 54
+#define BRICK_ROOF_TILE 53
+
+#define HEALTH_TILE 8
+
+//MISC
+#define MAX_HEALTH 3
+
+// TIMES
+#define MINIGAME_TIME 360
+#define TITLE_TEXT_DISPLAY_TIME 120
+
+// Locations
+#define TIMER_LOCATION_X 80
+#define TIMER_LOCATION_Y 24
+
+// WHAT I WAS DOING UPDATING SPRITE NUMBERS FOR BARS WILL HAVE TO REMOVE GOAL WHICH MEANS UPDATING TEXT START ETC
+// SPRITES
+#define PLAYER_SPRITE 0
+#define TIMER_FIRST_DIGIT 1
+#define TIMER_SECOND_DIGIT 2
+#define MINIGAME_SPRITE_START 3
+
+// Define Functions
+#define initialise_8x8_sprite(ID, TILE, X, Y) {\
+		set_sprite_tile(ID, TILE); \
+		move_sprite(ID, X, Y); \
+	}
+
+#define initialise_goal_flag_sprite(STARTING_ID) {\
+		set_sprite_tile(STARTING_ID, GOAL_FLAG_START_TILE); \
+		\
+		set_sprite_tile(STARTING_ID + 1, GOAL_FLAG_BOTTOM_TILE); \
+	}
+
+#define initialise_space_ship_sprite(STARTING_ID) { \
+		set_sprite_tile(STARTING_ID, SPACE_SHIP_TOP_TILE); \
+		set_sprite_tile(STARTING_ID + 1, SPACE_SHIP_MIDDLE_TILE); \
+		set_sprite_tile(STARTING_ID + 2, SPACE_SHIP_MIDDLE_TILE); \
+		set_sprite_tile(STARTING_ID + 3, SPACE_SHIP_MIDDLE_TILE); \
+		set_sprite_tile(STARTING_ID + 4, SPACE_SHIP_MIDDLE_TILE); \
+		set_sprite_tile(STARTING_ID + 5, SPACE_SHIP_BOTTOM_OFF_TILE); \
+		\
+		set_sprite_tile(STARTING_ID + 6, SPACE_SHIP_TOP_TILE); \
+		set_sprite_prop(STARTING_ID + 6, S_FLIPX); \
+		\
+		set_sprite_tile(STARTING_ID + 7, SPACE_SHIP_MIDDLE_TILE); \
+		set_sprite_prop(STARTING_ID + 7, S_FLIPX); \
+		\
+		set_sprite_tile(STARTING_ID + 8, SPACE_SHIP_MIDDLE_TILE); \
+		set_sprite_prop(STARTING_ID + 8, S_FLIPX); \
+		\
+		set_sprite_tile(STARTING_ID + 9, SPACE_SHIP_MIDDLE_TILE); \
+		set_sprite_prop(STARTING_ID + 9, S_FLIPX); \
+		\
+		set_sprite_tile(STARTING_ID + 10, SPACE_SHIP_MIDDLE_TILE); \
+		set_sprite_prop(STARTING_ID + 10, S_FLIPX); \
+		\
+		set_sprite_tile(STARTING_ID + 11, SPACE_SHIP_BOTTOM_OFF_TILE); \
+		set_sprite_prop(STARTING_ID + 11, S_FLIPX); \
+	}
+
+#define move_16x16_sprite(STARTING_ID, X, Y) { \
+		move_sprite(STARTING_ID, X, Y); \
+		move_sprite(STARTING_ID + 1, X + 8, Y); \
+		move_sprite(STARTING_ID + 2, X, Y + 8); \
+		move_sprite(STARTING_ID + 3, X + 8, Y + 8); \
+	}
+
+#define move_16x8_sprite(STARTING_ID, X, Y) { \
+		move_sprite(STARTING_ID, X, Y); \
+		move_sprite(STARTING_ID + 1, X + 8, Y); \
+	}
+
+#define move_8x16_sprite(STARTING_ID, X, Y) { \
+		move_sprite(STARTING_ID, X, Y); \
+		move_sprite(STARTING_ID + 1, X, Y + 8); \
+	}
+
+#define move_8x32_sprite(STARTING_ID, X, Y) { \
+		move_sprite(STARTING_ID, X, Y); \
+		move_sprite(STARTING_ID + 1, X, Y + 8); \
+		move_sprite(STARTING_ID + 2, X, Y + 16); \
+	}
+
+// [0, 0] [0, 0]
+// [0, 1] [0, 8]
+// [0, 2] [0, 16]
+// [0, 3] [0, 24]
+// [0, 4] [0, 32]
+// [0, 5] [0, 40]
+// [0, 6] [0, 48]
+#define move_16x40_sprite(STARTING_ID, X, Y) { \
+		move_sprite(STARTING_ID, X, Y); \
+		move_sprite(STARTING_ID + 1, X, Y + 8); \
+		move_sprite(STARTING_ID + 2, X, Y + 16); \
+		move_sprite(STARTING_ID + 3, X, Y + 24); \
+		move_sprite(STARTING_ID + 4, X, Y + 32); \
+		move_sprite(STARTING_ID + 5, X, Y + 40); \
+		\
+		move_sprite(STARTING_ID + 6, X + 8, Y); \
+		move_sprite(STARTING_ID + 7, X + 8, Y + 8); \
+		move_sprite(STARTING_ID + 8, X + 8, Y + 16); \
+		move_sprite(STARTING_ID + 9, X + 8, Y + 24); \
+		move_sprite(STARTING_ID + 10, X + 8, Y + 32); \
+		move_sprite(STARTING_ID + 11, X + 8, Y + 40); \
+	}
+
+#define scroll_16x40_sprite(STARTING_ID, X, Y) { \
+		scroll_sprite(STARTING_ID, X, Y); \
+		scroll_sprite(STARTING_ID + 1, X, Y + 8); \
+		scroll_sprite(STARTING_ID + 2, X, Y + 16); \
+		scroll_sprite(STARTING_ID + 3, X, Y + 24); \
+		scroll_sprite(STARTING_ID + 4, X, Y + 32); \
+		scroll_sprite(STARTING_ID + 5, X, Y + 40); \
+		\
+		scroll_sprite(STARTING_ID + 6, X + 8, Y); \
+		scroll_sprite(STARTING_ID + 7, X + 8, Y + 8); \
+		scroll_sprite(STARTING_ID + 8, X + 8, Y + 16); \
+		scroll_sprite(STARTING_ID + 9, X + 8, Y + 24); \
+		scroll_sprite(STARTING_ID + 10, X + 8, Y + 32); \
+		scroll_sprite(STARTING_ID + 11, X + 8, Y + 40); \
+	}
+
+#define get_tile_for_char(X) (X - 'A') + ALPHABET_START_TILE
+
+#define rect_overlaping(A_LEFT, A_RIGHT, A_TOP, A_BOTTOM, B_LEFT, B_RIGHT, B_TOP, B_BOTTOM) A_LEFT <= B_RIGHT && B_LEFT <= A_RIGHT && A_TOP <= B_BOTTOM && B_TOP <= A_BOTTOM
+
+#define rect_inside(A_LEFT, A_RIGHT, A_TOP, A_BOTTOM, B_LEFT, B_RIGHT, B_TOP, B_BOTTOM) A_LEFT >= B_LEFT && A_TOP >= B_TOP && A_RIGHT <= B_RIGHT && A_BOTTOM <= B_BOTTOM
+
+#define sprites_8x8_overlaping(A_X, A_Y, B_X, B_Y) rect_overlaping(A_X, A_X + 8, A_Y, A_Y + 8, B_X, B_X + 8, B_Y, B_Y + 8)
+
+#define sprite_in_green_square(A_X, A_Y) rect_inside(A_X, A_X + 8, A_Y, A_Y + 8, 64, 104, 80, 111)
+
+#define UBYTE_rand_in_range(MIN, MAX) \
+	(((UBYTE)rand()) % MAX - MIN) + MIN
+
+uint_16 _seed;
+uint_16 _devil_move_delay;
+uint_16 _devil_change_direction;
+
+UBYTE _player_x;
+UBYTE _player_y;
+
+UWORD _count;
+UBYTE _next_minigame;
+
+BYTE _health;
+
+void beep() {
+	NR10_REG = 0x38U;
+	NR11_REG = 0x70U;
+	NR12_REG = 0xE0U;
+	NR13_REG = 0x0AU;
+	NR14_REG = 0xC6U;
+
+	NR51_REG |= 0x11;
+}
+
+void player_moved() {
+	move_sprite(PLAYER_SPRITE, _player_x, _player_y);
+}
+ 
+void initialise_player_sprite() {
+	initialise_8x8_sprite(0, PLAYER_IDLE_TILE, MIDDLE_X, MIDDLE_Y);
+}
+
+void clear_text(UBYTE starting_id, UBYTE n) {
+	UBYTE i;
+
+	for(i = 0; i < n; i++) {
+		move_sprite(starting_id + i, 0x00, 0x00);
+		set_sprite_prop(starting_id + i, 0x00);
+	}
+}
+
+void print_text(uint_8 starting_id, const char* text, UBYTE n, UBYTE x, UBYTE y) {
+	UBYTE i;
+
+	for(i = 0; i < n; i++) {
+		initialise_8x8_sprite(starting_id + i, get_tile_for_char(text[i]), x + (i * 8), y);
+	}
+}
+
+void show_health() {
+	BYTE i;
+
+	for(i = 0; i < _health; i++) {
+		initialise_8x8_sprite(MINIGAME_SPRITE_START + i, SOVIET_SYMBOL_TILE, (MIDDLE_X - 8) + (i * 8) + (i * 2), 50);
+	}
+
+}
+
+void hide_health() {
+	BYTE i;
+
+	for(i = 0; i < _health; i++) {
+		move_sprite(MINIGAME_SPRITE_START + i, 200, 200);
+	}
+}
+
+void game_success() {
+	set_bkg_tiles(0, 0, mingame_title_mapWidth, mingame_title_mapHeight, mingame_title_map);
+
+	set_bkg_tiles(4, 4, victory_screenWidth, victory_screenHeight, victory_screen);
+
+	set_bkg_tiles(8, 11, soviet_symbol_bigWidth, soviet_symbol_bigHeight, soviet_symbol_big);
+
+	waitpad(J_A);
+	waitpadup();
+}
+
+
+void game_over() {
+	set_bkg_tiles(0, 0, mingame_title_mapWidth, mingame_title_mapHeight, mingame_title_map);
+	
+	set_bkg_tiles(5, 4, game_over_mapWidth, game_over_mapHeight, game_over_map);
+
+	waitpad(J_A);
+	waitpadup();
+}
+
+void minigame_fail() {
+	UBYTE n = 15;
+
+	_health--;
+
+	set_bkg_tiles(0, 0, mingame_title_mapWidth, mingame_title_mapHeight, mingame_title_map);
+
+	SHOW_BKG;
+
+	if(_health < 0) {
+
+	} else {
+		show_health();
+
+		print_text(MINIGAME_SPRITE_START + MAX_HEALTH, "YOU HAVE", 8, MIDDLE_X - ((8 / 2) * 8), MIDDLE_Y);
+		print_text(MINIGAME_SPRITE_START + MAX_HEALTH + 8, "FAILLED", 7, MIDDLE_X - ((7 / 2) * 8), MIDDLE_Y + 9);
+		print_text(MINIGAME_SPRITE_START + MAX_HEALTH + 8 + 7, "THE STATE", 9, MIDDLE_X - ((9 / 2) * 8), MIDDLE_Y + 18);
+		
+		delay(1200);
+
+		hide_health();
+		clear_text(MINIGAME_SPRITE_START + MAX_HEALTH, 8 + 7 + 9);
+	}
+}
+
+void minigame_success() {
+	UBYTE n = 15;
+
+	set_bkg_tiles(0, 0, mingame_title_mapWidth, mingame_title_mapHeight, mingame_title_map);
+
+	SHOW_BKG;
+
+	show_health();
+
+	print_text(MINIGAME_SPRITE_START + MAX_HEALTH, "MASSIVE", 7, MIDDLE_X - ((7 / 2) * 8), MIDDLE_Y);
+	print_text(MINIGAME_SPRITE_START + MAX_HEALTH + 7, "SUCCESS", 7, MIDDLE_X - ((7 / 2) * 8), MIDDLE_Y + 9);
+	
+	delay(1200);
+
+	hide_health();
+	clear_text(MINIGAME_SPRITE_START + MAX_HEALTH, 7 * 2);
+}
+
+void reset_timer() {
+	_count = MINIGAME_TIME;
+
+	set_sprite_tile(TIMER_FIRST_DIGIT, DIGIT_START_TILE);
+	set_sprite_tile(TIMER_SECOND_DIGIT, DIGIT_START_TILE);
+}
+
+void step_timer() {
+	BYTE seconds;
+	BYTE first_digit;
+	BYTE second_digit;
+	
+	_count--;
+	seconds = _count / 60;
+	first_digit = seconds % 10;
+	second_digit = seconds / 10;
+
+	set_sprite_tile(TIMER_FIRST_DIGIT, DIGIT_START_TILE + second_digit);
+	set_sprite_prop(TIMER_FIRST_DIGIT, S_PRIORITY);
+
+	set_sprite_tile(TIMER_SECOND_DIGIT, DIGIT_START_TILE + first_digit);
+	set_sprite_prop(TIMER_SECOND_DIGIT, S_PRIORITY);
+}
+
+void hide_timer() {
+	move_sprite(TIMER_FIRST_DIGIT, 200, 200);
+	move_sprite(TIMER_SECOND_DIGIT, 200, 200);
+}
+
+void show_timer() {
+	move_sprite(TIMER_FIRST_DIGIT, TIMER_LOCATION_X, TIMER_LOCATION_Y);
+	move_sprite(TIMER_SECOND_DIGIT, TIMER_LOCATION_X + 9, TIMER_LOCATION_Y);
+}
+
+void hide_player() {
+	_player_x = 200;
+	_player_y = 200;
+	player_moved();
+}
+
+void process_movement() {
+	if(joypad() & J_RIGHT) {
+		_player_x++;
+		player_moved();
+	}
+	
+	if(joypad() & J_LEFT) {
+		_player_x--;
+		player_moved();
+	}
+
+	if(joypad() & J_UP) {
+		_player_y--;
+		player_moved();
+	}
+
+	if(joypad() & J_DOWN) {
+		_player_y++;
+		player_moved();
+	}
+}
+
+#define BUTTON_TOP_LEFT_X MIDDLE_X
+#define BUTTON_TOP_LEFT_Y MIDDLE_Y
+
+// Block game
+BYTE start_game_08() {
+	BYTE direction = 1;
+	BYTE success = 0;
+
+	set_bkg_tiles(1, 14, block_game_backgroundWidth, block_game_backgroundHeight, block_game_background);
+
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 0, BRICK_ROOF_TILE, _player_x, _player_y + 0);
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 1, BRICK_TILE, _player_x, _player_y + 8);
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 2, BRICK_TILE,  _player_x, _player_y + 16);
+	
+	reset_timer();
+
+	_player_x = 5 * 8;
+	_player_y = 40;
+
+	while (1) {
+		wait_vbl_done();
+
+		step_timer();
+
+		if(_count % 2 == 0) {
+			_player_y++;
+		} else {
+			continue;
+		}
+
+		if(joypad() & J_A) {
+			direction = !direction;
+			waitpadup();
+		}
+
+		if(joypad() & J_LEFT) {
+			_player_x -= 8;
+		}
+
+		if(joypad() & J_RIGHT) {
+			_player_x += 8;
+		}
+
+		move_sprite(MINIGAME_SPRITE_START + 0, _player_x + direction * 0, _player_y + !direction * 0);
+		move_sprite(MINIGAME_SPRITE_START + 1, _player_x + direction * 8, _player_y + !direction * 8);
+		move_sprite(MINIGAME_SPRITE_START + 2, _player_x + direction * 16, _player_y + !direction * 16);
+
+		if(
+			(_player_x != 8 * 11 && _player_y == ((8 * 16) - (direction ? (8 * 1) - 2 : (8 * 3) - 2))) ||
+			(_player_x == 8 * 11 && ((direction && _player_y == (8 * 15) + 2) || _player_y == (8 * 16)))
+		) {
+			delay(2000);
+			break;
+		}
+	}
+
+	move_sprite(MINIGAME_SPRITE_START + 0, 0, 0);
+	move_sprite(MINIGAME_SPRITE_START + 1, 0, 0);
+	move_sprite(MINIGAME_SPRITE_START + 2, 0, 0);
+
+	return !direction && _player_y == (8 * 16) && _player_x == 8 * 11;
+}
+
+// FIRE
+BYTE start_game_07() {
+	_player_x = MIDDLE_X - 30;
+	_player_y = MIDDLE_Y + 4;
+
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 0, HAND_TILE, _player_x, _player_y);
+	set_sprite_prop(MINIGAME_SPRITE_START + 0, S_PRIORITY);
+
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 1, BUTTON_UP_TOP_LEFT_TILE, BUTTON_TOP_LEFT_X, BUTTON_TOP_LEFT_Y);
+
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 2, BUTTON_UP_TOP_LEFT_TILE, BUTTON_TOP_LEFT_X + 8, BUTTON_TOP_LEFT_Y);
+	set_sprite_prop(MINIGAME_SPRITE_START + 2, S_FLIPX);
+
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 3, BUTTON_UP_TOP_LEFT_TILE, BUTTON_TOP_LEFT_X, BUTTON_TOP_LEFT_Y + 8);
+	set_sprite_prop(MINIGAME_SPRITE_START + 3, S_FLIPY);
+
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 4, BUTTON_UP_TOP_LEFT_TILE, BUTTON_TOP_LEFT_X + 8, BUTTON_TOP_LEFT_Y + 8);
+	set_sprite_prop(MINIGAME_SPRITE_START + 4, S_FLIPX | S_FLIPY);
+
+	reset_timer();
+	show_timer();
+
+	while(1) {
+		wait_vbl_done();
+		step_timer();
+
+		if(joypad() & J_RIGHT) {
+			_player_x++;
+			move_sprite(MINIGAME_SPRITE_START + 0, _player_x, _player_y);
+
+			if(_player_x >= 79) {
+				set_sprite_tile(MINIGAME_SPRITE_START + 0, BUTTON_DOWN_TOP_LEFT_TILE);
+				set_sprite_tile(MINIGAME_SPRITE_START + 2, BUTTON_DOWN_TOP_LEFT_TILE);
+				set_sprite_tile(MINIGAME_SPRITE_START + 3, BUTTON_DOWN_TOP_LEFT_TILE);
+				set_sprite_tile(MINIGAME_SPRITE_START + 4, BUTTON_DOWN_TOP_LEFT_TILE);
+
+				set_sprite_prop(MINIGAME_SPRITE_START + 0, 0);
+				set_sprite_prop(MINIGAME_SPRITE_START + 2, 0);
+				set_sprite_prop(MINIGAME_SPRITE_START + 3, 0);
+				set_sprite_prop(MINIGAME_SPRITE_START + 4, 0);
+
+				print_text(MINIGAME_SPRITE_START, "LIFE  DEAD", 10, MIDDLE_X - (8 * 5), MIDDLE_Y);
+				delay(2000);
+				clear_text(MINIGAME_SPRITE_START, 9);
+				break;
+			}
+		}
+
+		if(_count == 0) {
+			break;
+		}
+	}
+
+	hide_timer();
+
+	for(_count = 0; _count < 5; _count++) {
+		move_sprite(MINIGAME_SPRITE_START + _count, 0, 0);
+		set_sprite_prop(MINIGAME_SPRITE_START + _count, 0);
+	}
+
+	return _player_x < 79;
+}
+
+#define POLE_START_X MIDDLE_X 
+#define POLE_START_Y MIDDLE_Y - 5
+
+// Raise Flag
+BYTE start_game_06() {
+	BYTE success = 0;
+
+	_player_y = MIDDLE_Y + 24;
+
+	set_bkg_tiles(6, 11, building_00Width, building_00Height, building_00);
+
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 0, FLAG_POLE_TILE, POLE_START_X, POLE_START_Y);
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 1, FLAG_POLE_TILE, POLE_START_X, POLE_START_Y + 8);
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 2, FLAG_POLE_TILE, POLE_START_X, POLE_START_Y + 16);
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 3, FLAG_POLE_TILE, POLE_START_X, POLE_START_Y + 24);
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 10, FLAG_POLE_TILE, POLE_START_X, POLE_START_Y + 32);
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 11, FLAG_POLE_TILE, POLE_START_X, POLE_START_Y + 40);
+
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 4, FLAG_MIDDLE_TILE, MIDDLE_X + 8, _player_y);
+	set_sprite_prop(MINIGAME_SPRITE_START + 4, S_FLIPY);
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 5, FLAG_MIDDLE_TILE, MIDDLE_X + 8, _player_y + 8);
+
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 6, FLAG_MIDDLE_TILE, MIDDLE_X + 16, _player_y);
+	set_sprite_prop(MINIGAME_SPRITE_START + 6, S_FLIPY);
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 7, FLAG_MIDDLE_TILE, MIDDLE_X + 16, _player_y + 8);
+
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 8, FLAG_MIDDLE_TILE, MIDDLE_X + 24, _player_y);
+	set_sprite_prop(MINIGAME_SPRITE_START + 8, S_FLIPY);
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 9, FLAG_MIDDLE_TILE, MIDDLE_X + 24, _player_y + 8);
+
+	reset_timer();
+
+	while (1) {
+		wait_vbl_done();
+
+		step_timer();
+
+		if(_count % 5 == 0) {
+			_player_y--;
+			move_sprite(MINIGAME_SPRITE_START + 4, MIDDLE_X + 8, _player_y);
+			move_sprite(MINIGAME_SPRITE_START + 5, MIDDLE_X + 8, _player_y + 8);
+			move_sprite(MINIGAME_SPRITE_START + 6, MIDDLE_X + 16, _player_y);
+			move_sprite(MINIGAME_SPRITE_START + 7, MIDDLE_X + 16, _player_y + 8);
+			move_sprite(MINIGAME_SPRITE_START + 8, MIDDLE_X + 24, _player_y);
+			move_sprite(MINIGAME_SPRITE_START + 9, MIDDLE_X + 24, _player_y + 8);
+		}
+
+		if(joypad() & J_A || _player_y < POLE_START_Y - 8) {
+			break;
+		}
+	}
+
+
+	if(_player_y >= POLE_START_Y && _player_y <= POLE_START_Y + 4) {
+		set_bkg_tiles(8, 2, soviet_symbol_bigWidth, soviet_symbol_bigHeight, soviet_symbol_big);
+		delay(1000);
+		success = 1;
+	} else {
+		success = 0;
+	}
+
+	for(_count = 0; _count < 12; _count++) {
+		move_sprite(MINIGAME_SPRITE_START + _count, 0, 0);
+		set_sprite_prop(MINIGAME_SPRITE_START + _count, 0);
+	}
+
+	return success;
+}
+
+#define GAME_04_TANK_BOTTOM_Y MAX_Y
+
+// Build tank
+BYTE start_game_05() {
+	_player_y = 50;
+	_player_x =  8 * (rand() % 2 == 0 ? ((UBYTE)2 + (UBYTE)rand() % ((UBYTE)5 - (UBYTE)2)) : ((UBYTE)14 + (UBYTE)rand() % ((UBYTE)18 - (UBYTE)14)));
+
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 0, TANK_TOP_LEFT_TILE, MIDDLE_X, _player_y);
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 1, TANK_TOP_RIGHT_TILE, MIDDLE_X + 8, _player_y);
+
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 2, TANK_BOTTOM_LEFT_TILE, _player_x, GAME_04_TANK_BOTTOM_Y);
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 3, TANK_BOTTOM_RIGHT_TILE, _player_x + 8, GAME_04_TANK_BOTTOM_Y);
+
+
+	for(_count = 1; _count < 18; _count++) {
+		set_bkg_tiles(_count, 7, building_background_00Width, building_background_00Height, building_background_00);
+	}
+
+	set_bkg_tiles(8, 7, soviet_symbol_bigWidth, soviet_symbol_bigHeight, soviet_symbol_big);
+
+	reset_timer();
+	show_timer();
+
+	while (1) {
+		wait_vbl_done();
+		step_timer();
+
+		if(_count % 2 == 0) {
+			_player_y++;
+		}
+
+		if(joypad() & J_LEFT) {
+			_player_x--;
+		}
+
+		if(joypad() & J_RIGHT) {
+			_player_x++;
+		}
+
+		move_sprite(MINIGAME_SPRITE_START + 0, MIDDLE_X, _player_y);
+		move_sprite(MINIGAME_SPRITE_START + 1, MIDDLE_X + 8, _player_y);
+		move_sprite(MINIGAME_SPRITE_START + 2, _player_x, GAME_04_TANK_BOTTOM_Y);
+		move_sprite(MINIGAME_SPRITE_START + 3, _player_x + 8, GAME_04_TANK_BOTTOM_Y);
+
+		if(_player_y == GAME_04_TANK_BOTTOM_Y - 8) {
+			break;
+		}
+
+	}
+
+	delay(1000);
+
+	hide_timer();
+
+	move_sprite(MINIGAME_SPRITE_START + 0, 0, 0);
+	move_sprite(MINIGAME_SPRITE_START + 1, 0, 0);
+	move_sprite(MINIGAME_SPRITE_START + 2, 0, 0);
+	move_sprite(MINIGAME_SPRITE_START + 3, 0, 0);
+
+	return _player_x >= MIDDLE_X - 4 && _player_x <= MIDDLE_X + 12;
+}
+
+#define NUMBER_OF_PROLETARIAT_GAME_04 4
+
+// Line
+BYTE start_game_04() {
+	UBYTE proletariat_cords[NUMBER_OF_PROLETARIAT_GAME_04];
+	UBYTE i;
+	BYTE success = 1;
+
+	proletariat_cords[0] = MIDDLE_X_8x8 - 18;
+	initialise_8x8_sprite(MINIGAME_SPRITE_START, PLAYER_SAD_FACE_TILE, proletariat_cords[0], MIDDLE_Y_8x8);
+
+	proletariat_cords[1] = MIDDLE_X_8x8 - 32;
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 1, PLAYER_SAD_FACE_TILE, proletariat_cords[1], MIDDLE_Y_8x8);
+
+	proletariat_cords[2] = MIDDLE_X_8x8 - 45;
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 2, PLAYER_SAD_FACE_TILE, proletariat_cords[2], MIDDLE_Y_8x8);
+
+	proletariat_cords[3] = MIDDLE_X_8x8 + 12;
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 3, PLAYER_SAD_FACE_TILE, proletariat_cords[3], MIDDLE_Y_8x8);
+
+	reset_timer();
+	show_timer();
+
+	_player_x = MIDDLE_X_8x8;
+	_player_y = MIDDLE_Y_8x8;
+	player_moved();
+	
+	while (success) {
+		wait_vbl_done();
+		step_timer();
+
+		for(i = 0; i < NUMBER_OF_PROLETARIAT_GAME_04; i++) {
+			if(i == 3 && rand() % 18 == 0 || i != 3 && rand() % 15 == 0) {
+				proletariat_cords[i]++;
+				move_sprite(MINIGAME_SPRITE_START + i, proletariat_cords[i], MIDDLE_Y_8x8);
+			}
+
+			if(_player_x + 8u > proletariat_cords[i] && _player_x < proletariat_cords[i] + 8u) {
+				success = 0;
+				break;
+			}
+		}
+
+		if(joypad() & J_RIGHT) {
+			_player_x++;
+			player_moved();
+		}
+
+		if(_count == 0) {
+			break;
+		}
+
+	}
+
+	hide_player();
+	hide_timer();
+
+	for(i = 0; i < NUMBER_OF_PROLETARIAT_GAME_04; i++) {
+		move_sprite(MINIGAME_SPRITE_START + i, 0, 0);
+	}
+
+	return success;
+}
+
+BYTE start_game_03() {
+	BYTE success = 0;
+	BYTE up_last_loop = 0;
+
+	_player_y = 66;
+
+	reset_timer();
+	show_timer();
+
+	set_bkg_tiles(7, 11, building_00Width, building_00Height, building_00);
+
+	initialise_space_ship_sprite(MINIGAME_SPRITE_START);
+	move_16x40_sprite(MINIGAME_SPRITE_START, 85, _player_y);
+
+	while (1) {
+		wait_vbl_done();
+
+		step_timer();
+
+		if((joypad() & J_A) && up_last_loop) {
+			up_last_loop = 0;
+
+			_player_y -= 5;
+			move_16x40_sprite(MINIGAME_SPRITE_START, 85, _player_y);
+
+			if(_player_y % 2 == 0) {
+				set_sprite_tile(MINIGAME_SPRITE_START + 5, SPACE_SHIP_BOTTOM_ON_A_TILE);
+				set_sprite_tile(MINIGAME_SPRITE_START + 11, SPACE_SHIP_BOTTOM_ON_B_TILE);
+			} else {
+				set_sprite_tile(MINIGAME_SPRITE_START + 5, SPACE_SHIP_BOTTOM_ON_B_TILE);
+				set_sprite_tile(MINIGAME_SPRITE_START + 11, SPACE_SHIP_BOTTOM_ON_A_TILE);
+			}
+
+			if(_player_y + 30 > 200) {
+				success = 1;
+				break;
+			}
+		} else if (!(joypad() & J_A) && !up_last_loop) {
+			up_last_loop = 1;
+		} else if(_count % 10 == 0 && _player_y < 66) {
+			_player_y++;
+			move_16x40_sprite(MINIGAME_SPRITE_START, 85, _player_y);
+		}
+
+		if(_count == 0) {
+			break;
+		}
+	}
+
+	hide_timer();
+	// Only clear tiles which have been fliped
+	clear_text(MINIGAME_SPRITE_START, 12);
+
+	return success;
+}
+
+#define NUMBER_OF_PROLETARIAT_GAME_02 3 * 2
+
+BYTE start_game_02() {
+	// 3 dudes 2 cords each
+	UBYTE proletariat_cords[NUMBER_OF_PROLETARIAT_GAME_02];
+	BYTE success = 0;
+	BYTE i;
+	BYTE controling_index = 0;
+
+	for(i = 0; i < NUMBER_OF_PROLETARIAT_GAME_02; i += 2) {
+		proletariat_cords[i] = (UBYTE)16 + (UBYTE)rand() % ((UBYTE)MAX_X - (UBYTE)16);
+		proletariat_cords[i + 1] = (UBYTE)24 + (UBYTE)rand() % ((UBYTE)MAX_Y - (UBYTE)24);
+
+		if(i == 0){
+			initialise_8x8_sprite(MINIGAME_SPRITE_START + i, PLAYER_SCREAMING_SELECTED_TILE, proletariat_cords[i], proletariat_cords[i + 1]);
+		} else {
+			initialise_8x8_sprite(MINIGAME_SPRITE_START + i, PLAYER_SAD_FACE_TILE, proletariat_cords[i], proletariat_cords[i + 1]);
+		}
+	}
+
+	set_bkg_tiles(7, 6, green_sqaureWidth, green_sqaureHeight, green_sqaure);
+
+	reset_timer();
+	show_timer();
+
+	while (1) {
+		wait_vbl_done();
+		step_timer();
+
+		if(controling_index >= 0){
+			if(joypad() & J_RIGHT) {
+				proletariat_cords[controling_index]++;
+			}
+			
+			if(joypad() & J_LEFT) {
+				proletariat_cords[controling_index]--;
+			}
+
+			if(joypad() & J_UP) {
+				proletariat_cords[controling_index + 1]--;
+			}
+
+			if(joypad() & J_DOWN) {
+				proletariat_cords[controling_index + 1]++;
+			}
+
+			move_sprite(
+				MINIGAME_SPRITE_START + controling_index, 
+				proletariat_cords[controling_index], 
+				proletariat_cords[controling_index + 1]
+			);
+
+			if(sprite_in_green_square(proletariat_cords[controling_index], proletariat_cords[controling_index + 1])) {
+				// Ensure move hitbox
+				proletariat_cords[controling_index] = 0;
+				proletariat_cords[controling_index + 1] = 0;
+
+				set_sprite_tile(MINIGAME_SPRITE_START + controling_index, PLAYER_SCREAMING_FACE_TILE);
+
+				controling_index += 2;
+
+				if(controling_index >= NUMBER_OF_PROLETARIAT_GAME_02){
+					success = 1;
+					break;
+				}
+				else{
+					set_sprite_tile(MINIGAME_SPRITE_START + controling_index, PLAYER_SCREAMING_SELECTED_TILE);
+				}
+
+			}
+		} 
+
+		if(_count == 0) {
+			break;
+		}
+	}
+
+	hide_timer();
+	
+	for(i = 0; i < NUMBER_OF_PROLETARIAT_GAME_02; i += 2) {
+		move_sprite(MINIGAME_SPRITE_START + i, 0, 0);
+	}
+
+	return success;
+}
+
+BYTE start_game_01() {
+
+	set_bkg_tiles(11, 3, building_00Width, building_00Height, building_00);
+
+	_player_x = MIDDLE_X_8x8 - 16;
+	_player_y = MIDDLE_Y_8x8;
+	player_moved();
+
+	initialise_8x8_sprite(MINIGAME_SPRITE_START, PLAYER_SAD_FACE_TILE, MIDDLE_X_8x8 - 32, MIDDLE_Y_8x8);
+
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 1, PLAYER_SAD_FACE_TILE, MIDDLE_X_8x8, MIDDLE_Y_8x8);
+
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 2, BULLET_TILE, 200, 200);
+
+	reset_timer();
+	show_timer();
+
+	while (1) {
+		wait_vbl_done();
+		
+		if(joypad() & J_A) {
+			// Shoot first bullet
+			beep();
+			while(_player_x < MIDDLE_X_8x8) {
+				wait_vbl_done();
+				move_sprite(MINIGAME_SPRITE_START + 2, _player_x, _player_y);
+				_player_x++;
+			}
+			set_sprite_tile(MINIGAME_SPRITE_START + 1, 0xFF);
+			move_sprite(MINIGAME_SPRITE_START + 2, 0, 0);
+			delay(1000);
+
+			// Shoot 2nd bullet
+			_player_x = MIDDLE_X_8x8 - 32;
+			// No idea why I can't just use _player_x here it just doesn't work
+			move_sprite(MINIGAME_SPRITE_START + 2, MIDDLE_X_8x8 - 32, _player_y);
+			beep();
+
+			while(_player_x < MIDDLE_X_8x8 - 16) {
+				wait_vbl_done();
+				move_sprite(MINIGAME_SPRITE_START + 2, _player_x, _player_y);
+				_player_x++;
+			}
+
+			hide_player();
+			hide_timer();
+
+			delay(1000);
+
+			set_sprite_tile(MINIGAME_SPRITE_START, 0xFF);
+			set_sprite_tile(MINIGAME_SPRITE_START + 2, 0xFF);
+
+			return 1;
+		}
+
+		step_timer();
+		
+		if(_count == 0) {
+			break;
+		}
+	}
+
+	hide_timer();
+	hide_player();
+	set_sprite_tile(MINIGAME_SPRITE_START, 0xFF);
+	set_sprite_tile(MINIGAME_SPRITE_START + 1, 0xFF);
+	set_sprite_tile(MINIGAME_SPRITE_START + 2, 0xFF);
+
+	return 0;
+}
+
+BYTE start_game_00() {
+	BYTE playing = 1;
+
+	_player_x = MIDDLE_X_8x8;
+	_player_y = MIDDLE_Y_8x8;
+
+	player_moved();
+
+	reset_timer();
+	show_timer();
+
+	while (playing) {
+		wait_vbl_done();
+		process_movement();
+
+		step_timer();
+		if(_count == 0) {
+			playing = 0;
+		}
+	}
+
+	hide_timer();
+	hide_player();
+
+	return 1;
+}
+
+void start_minigame_title(const char* text, UBYTE n) {
+	UWORD i, j;
+
+	set_bkg_tiles(0, 0, mingame_title_mapWidth, mingame_title_mapHeight, mingame_title_map);
+
+	// Initlaise sprite data
+	set_sprite_data(0, 0, minigames_0);
+	
+	print_text(MINIGAME_SPRITE_START, text, n, MIDDLE_X - ((n / 2) * 8), MIDDLE_Y);
+
+	SHOW_BKG;
+
+	for(i = 0; i < TITLE_TEXT_DISPLAY_TIME; i++) {
+		for(j = 0; j < n; j++) {
+			if(i % 10 == 0) {
+				set_sprite_tile(MINIGAME_SPRITE_START + j, 0xFF);
+			} else {
+				set_sprite_tile(MINIGAME_SPRITE_START + j, get_tile_for_char(text[j]));
+			}
+		}
+		wait_vbl_done();
+	}
+
+	clear_text(MINIGAME_SPRITE_START, n);
+}
+
+void initialise_sound() {
+	NR50_REG = 0xFF;
+	NR51_REG = 0xFF;
+	NR52_REG = 0x80;
+}
+
+void play_game() {
+	UBYTE i;
+	UBYTE j;
+	UBYTE t;
+	UBYTE minigame_order[NUMBER_OF_MINIGAMES];
+
+	for(i = 0; i < NUMBER_OF_MINIGAMES; i++) {
+		minigame_order[i] = i;
+	}
+
+	for (i = 0; i < NUMBER_OF_MINIGAMES - 1; i++) {
+		j = (UBYTE)rand();
+		j = i + (j / ((UBYTE)255 / ((UBYTE)NUMBER_OF_MINIGAMES - (UBYTE)i) + (UBYTE)1));
+		t = minigame_order[j];
+		minigame_order[j] = minigame_order[i];
+		minigame_order[i] = t;
+	}
+
+	i = 0;
+
+	_player_x = 200;
+	_player_y = 200;
+	_health = MAX_HEALTH;
+
+	initialise_8x8_sprite(PLAYER_SPRITE, PLAYER_PLAIN_FACE_TILE, _player_x, _player_y);
+
+	while(1) {
+		wait_vbl_done();
+
+		_next_minigame = minigame_order[i];
+		// _next_minigame = 255;
+		i++;
+
+		switch (_next_minigame) {
+			case 0:
+				start_minigame_title("EAT", 3);
+				t = start_game_00();
+				break;
+			case 1:
+				start_minigame_title("SHOOT", 5);
+				t = start_game_01();
+				break;
+			case 2:
+				start_minigame_title("UNITE", 5);
+				t = start_game_02();
+				break;
+			case 3:
+				start_minigame_title("LAUNCH", 6);
+				t = start_game_03();
+				break;
+			case 4:
+				start_minigame_title("LINE", 4);
+				t = start_game_04();
+				break;
+			case 5:
+				start_minigame_title("ARM", 3);
+				t = start_game_05();
+				break;
+			case 6:
+				start_minigame_title("RAISE", 5);
+				t = start_game_06();
+				break;
+			case 7:
+				start_minigame_title("FIRE", 5);
+				t = start_game_07();
+				break;
+			case 8:
+				start_minigame_title("BUILD", 5);
+				t = start_game_08();
+				break;
+		}
+
+		if(t) {
+			minigame_success();
+		} else {
+			minigame_fail();
+		}
+
+		if(_health <= 0) {
+			game_over();
+			break;
+		}
+
+		// Am i an idiot?
+		if(i > NUMBER_OF_MINIGAMES - 1) {
+			game_success();
+			break;
+		}
+	}
+}
+
+void main_menu() {
+	UWORD seed = 0;
+
+	set_bkg_tiles(0, 0, game_title_mapWidth, game_title_mapHeight, game_title_map);
+
+	SHOW_BKG;
+
+	while (1) {
+		seed++;
+
+		if(joypad() & J_A) {
+			initrand(seed);
+			waitpadup();
+			play_game();
+			set_bkg_tiles(0, 0, game_title_mapWidth, game_title_mapHeight, game_title_map);
+		}
+	}
+	
+}
+
+void initalise_game() {
+	set_bkg_data(0, 126, minigames_0);
+
+	SPRITES_8x8;
+	DISPLAY_ON;
+	SHOW_SPRITES;
+}
+
+void main() {
+	initialise_sound();
+	initalise_game();
+
+	main_menu();
+}
