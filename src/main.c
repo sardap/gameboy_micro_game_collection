@@ -13,6 +13,8 @@
 #include "../Resouces/game_over.c"
 #include "../Resouces/building_background_00.c"
 #include "../Resouces/block_game_background.c"
+#include "../Resouces/subway.c"
+#include "../Resouces/subway_doors_map.c"
 
 #define MAX_X 160
 #define MAX_Y 144
@@ -32,6 +34,8 @@
 #define NUMBER_OF_SMALL_ENEMIES 5
 
 // TILES
+#define BLANK_TILE 127
+
 #define PLAYER_PLAIN_FACE_TILE 0
 #define PLAYER_SAD_FACE_TILE 37
 #define PLAYER_SCREAMING_FACE_TILE 55
@@ -78,6 +82,11 @@
 #define BRICK_TILE 51
 #define BRICK_WINDOW_TILE 54
 #define BRICK_ROOF_TILE 53
+
+#define SUBWAY_DOOR_CLOSED_TILE 96
+#define SUBWAY_DOOR_OPEN_TILE 98
+#define SUBWAY_DOOR_TOP_TILE 92
+#define SUBWAY_END_TILE 97
 
 #define HEALTH_TILE 8
 
@@ -254,9 +263,15 @@ void clear_text(UBYTE starting_id, UBYTE n) {
 
 void print_text(uint_8 starting_id, const char* text, UBYTE n, UBYTE x, UBYTE y) {
 	UBYTE i;
+	BYTE tile;
 
 	for(i = 0; i < n; i++) {
-		initialise_8x8_sprite(starting_id + i, get_tile_for_char(text[i]), x + (i * 8), y);
+		if(text[i] == ' ') {
+			tile = BLANK_TILE;
+		} else {
+			tile = get_tile_for_char(text[i]);
+		}
+		initialise_8x8_sprite(starting_id + i, tile, x + (i * 8), y);
 	}
 }
 
@@ -401,6 +416,90 @@ void process_movement() {
 		_player_y++;
 		player_moved();
 	}
+}
+
+// Subway game
+BYTE start_game_09() {
+	UBYTE empty[] = {0x7F, 0x7F, 0x7F, 0x7F};
+	BYTE random_person_x = 84;
+	BYTE success = 0;
+
+	set_bkg_tiles(0, 0, subwayWidth, subwayHeight, subway);
+
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 0, PLAYER_SAD_FACE_TILE, 0, 0);
+
+	move_bkg(12 * 8, 0);
+	reset_timer();
+	show_timer();
+
+	_player_x = 140;
+	_player_y = 17 * 8;
+	player_moved();
+
+	while (1) {
+		wait_vbl_done();
+		step_timer();
+
+		if(_count > 296) {
+			scroll_bkg(-2, 0);
+		}
+		else if(_count == 296) {
+			scroll_bkg(-2, 0);
+			set_bkg_tiles(5, 14, 2, 2, subway_doors_map);
+		} 
+		
+		if(joypad() & J_LEFT) {
+			if(_count % 2 == 0) {
+				_player_x--;
+				player_moved();
+			}
+		}
+
+		if(joypad() & J_RIGHT) {
+			if(_count % 2 == 0) {
+				_player_x++;
+				player_moved();
+			}
+		}
+
+		if(_count < 290) {
+			if(_count % 25 == 0) {
+				random_person_x--;
+				move_sprite(MINIGAME_SPRITE_START + 0, random_person_x, 17 * 8);
+			}
+
+			if(random_person_x + 8 > _player_x) {
+				break;
+			}
+
+			if(_player_x >= 80 && _player_x <= 84) {
+				hide_player();				
+				success = 1;
+				break;
+			}
+		}
+
+		if(_count == 0) {
+			break;
+		}
+	}
+
+	hide_timer();
+
+	set_bkg_tiles(0, 0, subwayWidth, subwayHeight, subway);
+
+	_count = 0;
+	while (_count < 64) {
+		wait_vbl_done();
+		scroll_bkg(-2, 0);
+		_count++;
+	}
+	
+	hide_player();
+	move_bkg(0, 0);
+	move_sprite(MINIGAME_SPRITE_START + 0, 0, 0);
+	
+	return success;
 }
 
 #define BUTTON_TOP_LEFT_X MIDDLE_X
@@ -968,9 +1067,6 @@ void start_minigame_title(const char* text, UBYTE n) {
 	UWORD i, j;
 
 	set_bkg_tiles(0, 0, mingame_title_mapWidth, mingame_title_mapHeight, mingame_title_map);
-
-	// Initlaise sprite data
-	set_sprite_data(0, 0, minigames_0);
 	
 	print_text(MINIGAME_SPRITE_START, text, n, MIDDLE_X - ((n / 2) * 8), MIDDLE_Y);
 
@@ -1025,8 +1121,8 @@ void play_game() {
 	while(1) {
 		wait_vbl_done();
 
-		_next_minigame = minigame_order[i];
-		// _next_minigame = 255;
+		// _next_minigame = minigame_order[i];
+		_next_minigame = 255;
 		i++;
 
 		switch (_next_minigame) {
@@ -1065,6 +1161,10 @@ void play_game() {
 			case 8:
 				start_minigame_title("BUILD", 5);
 				t = start_game_08();
+				break;
+			default:
+				start_minigame_title("BOARD", 5);
+				t = start_game_09();
 				break;
 		}
 
@@ -1109,6 +1209,7 @@ void main_menu() {
 
 void initalise_game() {
 	set_bkg_data(0, 126, minigames_0);
+	set_sprite_data(0, 127, minigames_0);
 
 	SPRITES_8x8;
 	DISPLAY_ON;
