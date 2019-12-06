@@ -15,6 +15,7 @@
 #include "../Resouces/block_game_background.c"
 #include "../Resouces/subway.c"
 #include "../Resouces/subway_doors_map.c"
+#include "../Resouces/tank_background.c"
 
 #define MAX_X 160
 #define MAX_Y 144
@@ -27,7 +28,7 @@
 
 #define INVINCIBILITY_TIME 60 
 
-#define NUMBER_OF_MINIGAMES 9
+#define NUMBER_OF_MINIGAMES 11
 
 // ENEMY_NUMBERS
 #define NUMBER_OF_DEVILS 2
@@ -374,10 +375,8 @@ void step_timer() {
 	second_digit = seconds / 10;
 
 	set_sprite_tile(TIMER_FIRST_DIGIT, DIGIT_START_TILE + second_digit);
-	set_sprite_prop(TIMER_FIRST_DIGIT, S_PRIORITY);
 
 	set_sprite_tile(TIMER_SECOND_DIGIT, DIGIT_START_TILE + first_digit);
-	set_sprite_prop(TIMER_SECOND_DIGIT, S_PRIORITY);
 }
 
 void hide_timer() {
@@ -418,9 +417,118 @@ void process_movement() {
 	}
 }
 
+void print_UWORD_number(UBYTE starting_id, UWORD number, UBYTE x, UBYTE y) {
+	BYTE digits[4];
+	BYTE i = 3;
+
+	while(number > 0) {
+		digits[i] = number % 10;
+		number /= 10;
+		i--;
+	}
+	
+	for(; i < 4; i++) {
+		if(digits[i] == 0) {
+			continue;
+		}
+		set_sprite_tile(starting_id + i, DIGIT_START_TILE + digits[i]);
+		move_sprite(starting_id + i, x + (i * 8), y);
+	}
+}
+
+#define NUMBER_OF_SCREEN_TILES 32
+#define GAME_10_MOVE_SPEED 2
+
+// destory
+BYTE start_game_10() {
+	UBYTE active_bkg[NUMBER_OF_SCREEN_TILES * tank_backgroundHeight];
+	BYTE last_active_postion = 0;
+	BYTE tank_background_postion = 32;
+	BYTE i, j;
+	UWORD world_x;
+
+	for(i = 0; i < tank_backgroundHeight; i++) {
+		for(j = 0; j < NUMBER_OF_SCREEN_TILES; j++) {
+			active_bkg[NUMBER_OF_SCREEN_TILES * i + j] = tank_background[tank_backgroundWidth * i + j];
+		}
+	}
+
+	_player_x = 24;
+	_player_y = MIDDLE_Y + 8;
+	
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 0, PLAYER_PLAIN_FACE_TILE, _player_x, _player_y);
+
+	reset_timer();
+	show_timer();
+
+	set_bkg_tiles(0, 0, NUMBER_OF_SCREEN_TILES, tank_backgroundHeight, active_bkg);
+
+	j = 0;
+	while (1) {
+		wait_vbl_done();
+		step_timer();
+
+		if(joypad() & J_LEFT && _player_x - GAME_10_MOVE_SPEED > 8) {
+			_player_x -= GAME_10_MOVE_SPEED;
+			move_sprite(MINIGAME_SPRITE_START + 0, _player_x, _player_y);
+		}
+
+		world_x = (UWORD)_player_x + (UWORD)((tank_background_postion - 32) * 8);
+		
+		if(joypad() & J_UP && world_x >= 304 && world_x <= 304 + 16) {
+			i = 1;
+			break;
+		}
+
+		if(joypad() & J_RIGHT) {
+			if(tank_background_postion - 12 < tank_backgroundWidth) {
+				if(_player_x < MAX_X / 2) {
+					_player_x += GAME_10_MOVE_SPEED;
+					move_sprite(MINIGAME_SPRITE_START + 0, _player_x, _player_y);
+				} else {
+					scroll_bkg(GAME_10_MOVE_SPEED, 0);
+					j += GAME_10_MOVE_SPEED;
+
+					if(j % 8 == 0) {
+						for(i = 0; i < tank_backgroundHeight; i++) {
+							active_bkg[NUMBER_OF_SCREEN_TILES * i + last_active_postion] = tank_background[tank_backgroundWidth * i + tank_background_postion];
+						}
+
+						set_bkg_tiles(0, 0, NUMBER_OF_SCREEN_TILES, tank_backgroundHeight, active_bkg);
+
+						tank_background_postion++;
+
+						if(last_active_postion == 31) {
+							last_active_postion = 0;
+						} else {
+							last_active_postion++;
+						}
+					}
+				}
+			} else if(_player_x < 116) {
+				_player_x += GAME_10_MOVE_SPEED;
+				move_sprite(MINIGAME_SPRITE_START + 0, _player_x, _player_y);
+			}
+		}
+
+		if(_count == 0) {
+			i = 0;
+			break;
+		}
+	}
+
+	set_bkg_tiles(0, 0, game_title_mapWidth, game_title_mapHeight, game_title_map);
+	move_bkg(0, 0);
+
+	move_sprite(MINIGAME_SPRITE_START + 0, 0, 0);
+
+	hide_timer();
+	
+	return i;
+}
+
 // Subway game
 BYTE start_game_09() {
-	UBYTE empty[] = {0x7F, 0x7F, 0x7F, 0x7F};
 	BYTE random_person_x = 84;
 	BYTE success = 0;
 
@@ -1121,8 +1229,8 @@ void play_game() {
 	while(1) {
 		wait_vbl_done();
 
-		// _next_minigame = minigame_order[i];
-		_next_minigame = 255;
+		_next_minigame = minigame_order[i];
+		// _next_minigame = 255;
 		i++;
 
 		switch (_next_minigame) {
@@ -1162,9 +1270,13 @@ void play_game() {
 				start_minigame_title("BUILD", 5);
 				t = start_game_08();
 				break;
-			default:
+			case 9:
 				start_minigame_title("BOARD", 5);
 				t = start_game_09();
+				break;
+			default:
+				start_minigame_title("ENTER", 5);
+				t = start_game_10();
 				break;
 		}
 
