@@ -16,6 +16,8 @@
 #include "../Resouces/subway.c"
 #include "../Resouces/subway_doors_map.c"
 #include "../Resouces/tank_background.c"
+#include "../Resouces/game_11_background_text.c"
+#include "../Resouces/game_11_buttons.c"
 
 #define MAX_X 160
 #define MAX_Y 144
@@ -26,9 +28,9 @@
 #define MIDDLE_X_8x8 (MAX_X / 2) + 4
 #define MIDDLE_Y_8x8 (MAX_Y / 2) + 4
 
-#define INVINCIBILITY_TIME 60 
+#define NUMBER_OF_SCREEN_TILES 32
 
-#define NUMBER_OF_MINIGAMES 11
+#define NUMBER_OF_MINIGAMES 12
 
 // ENEMY_NUMBERS
 #define NUMBER_OF_DEVILS 2
@@ -436,10 +438,90 @@ void print_UWORD_number(UBYTE starting_id, UWORD number, UBYTE x, UBYTE y) {
 	}
 }
 
-#define NUMBER_OF_SCREEN_TILES 32
+#define GAME_11_PLAYER_X_START 10 * 8
+#define GAME_11_PLAYER_Y_START 14 * 8 + 4
+
+// LIE
+BYTE start_game_11() {
+	BYTE state = 0;
+
+	set_bkg_tiles(5, 3, game_11_background_textWidth, game_11_background_textHeight, game_11_background_text);
+	set_bkg_tiles(5, 10, game_11_buttonsWidth, game_11_buttonsHeight, game_11_buttons);
+
+	_player_x = GAME_11_PLAYER_X_START;
+	_player_y = GAME_11_PLAYER_Y_START;
+	player_moved();
+
+	set_sprite_tile(MINIGAME_SPRITE_START + 0, VODKA_BOTTLE_TILE);
+
+	reset_timer();
+	show_timer();
+
+	while (1) {
+		wait_vbl_done();
+		step_timer();
+
+		if(joypad() & J_RIGHT) {
+			waitpadup();
+			state++;
+		}
+
+		if(joypad() & J_LEFT) {
+			waitpadup();
+			state--;
+		}
+
+		if(state > 1) {
+			state = 0;
+		}
+
+		if(state < 0) {
+			state = 1;
+		}
+
+		if(joypad() & J_A) {
+			break;
+		}
+ 
+		switch (state)
+		{
+			case 0:
+				move_sprite(MINIGAME_SPRITE_START + 0, 6 * 8, 13 * 8);
+				break;
+			
+			case 1:
+				move_sprite(MINIGAME_SPRITE_START + 0, 11 * 8, 13 * 8);
+				break;
+		}
+
+		if(_count == 0) {
+			state = 1;
+			break;
+		}
+
+	}
+
+	if(state == 1) {
+		_player_x = 0;
+		set_sprite_tile(MINIGAME_SPRITE_START + 1, BULLET_TILE);
+
+		while (_player_x < GAME_11_PLAYER_X_START) {
+			wait_vbl_done();
+			
+			_player_x++;
+			move_sprite(MINIGAME_SPRITE_START + 1, _player_x, GAME_11_PLAYER_Y_START);
+		}
+	}
+
+	hide_timer();
+	hide_player();
+
+	return state == 0;
+}
+
 #define GAME_10_MOVE_SPEED 2
 
-// destory
+// Enter
 BYTE start_game_10() {
 	UBYTE active_bkg[NUMBER_OF_SCREEN_TILES * tank_backgroundHeight];
 	BYTE last_active_postion = 0;
@@ -1229,8 +1311,8 @@ void play_game() {
 	while(1) {
 		wait_vbl_done();
 
-		_next_minigame = minigame_order[i];
-		// _next_minigame = 255;
+		// _next_minigame = minigame_order[i];
+		_next_minigame = 255;
 		i++;
 
 		switch (_next_minigame) {
@@ -1274,10 +1356,13 @@ void play_game() {
 				start_minigame_title("BOARD", 5);
 				t = start_game_09();
 				break;
-			default:
+			case 10:
 				start_minigame_title("ENTER", 5);
 				t = start_game_10();
 				break;
+			default:
+				start_minigame_title("LIE", 3);
+				t = start_game_11();
 		}
 
 		if(t) {
