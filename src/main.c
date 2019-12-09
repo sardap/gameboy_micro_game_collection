@@ -13,11 +13,13 @@
 #include "../Resouces/game_over.c"
 #include "../Resouces/building_background_00.c"
 #include "../Resouces/block_game_background.c"
-#include "../Resouces/subway.c"
+#include "../Resouces/subway_background_map.c"
 #include "../Resouces/subway_doors_map.c"
 #include "../Resouces/tank_background.c"
-#include "../Resouces/game_11_background_text.c"
-#include "../Resouces/game_11_buttons.c"
+#include "../Resouces/lie_game_background_text_map.c"
+#include "../Resouces/lie_game_buttons_map.c"
+#include "../Resouces/vote_game_voting_options_map.c"
+#include "../Resouces/censor_game_background_text_map.c"
 
 #define MAX_X 160
 #define MAX_Y 144
@@ -30,7 +32,7 @@
 
 #define NUMBER_OF_SCREEN_TILES 32
 
-#define NUMBER_OF_MINIGAMES 12
+#define NUMBER_OF_MINIGAMES 13
 
 // ENEMY_NUMBERS
 #define NUMBER_OF_DEVILS 2
@@ -92,6 +94,10 @@
 #define SUBWAY_END_TILE 97
 
 #define HEALTH_TILE 8
+
+#define GRATE_BACKGROUND_TILE 82
+
+#define FILLED_TILE 106
 
 //MISC
 #define MAX_HEALTH 3
@@ -255,7 +261,7 @@ void initialise_player_sprite() {
 	initialise_8x8_sprite(0, PLAYER_IDLE_TILE, MIDDLE_X, MIDDLE_Y);
 }
 
-void clear_text(UBYTE starting_id, UBYTE n) {
+void clear_sprites(UBYTE starting_id, UBYTE n) {
 	UBYTE i;
 
 	for(i = 0; i < n; i++) {
@@ -337,7 +343,7 @@ void minigame_fail() {
 		delay(1200);
 
 		hide_health();
-		clear_text(MINIGAME_SPRITE_START + MAX_HEALTH, 8 + 7 + 9);
+		clear_sprites(MINIGAME_SPRITE_START + MAX_HEALTH, 8 + 7 + 9);
 	}
 }
 
@@ -356,7 +362,7 @@ void minigame_success() {
 	delay(1200);
 
 	hide_health();
-	clear_text(MINIGAME_SPRITE_START + MAX_HEALTH, 7 * 2);
+	clear_sprites(MINIGAME_SPRITE_START + MAX_HEALTH, 7 * 2);
 }
 
 void reset_timer() {
@@ -438,18 +444,192 @@ void print_UWORD_number(UBYTE starting_id, UWORD number, UBYTE x, UBYTE y) {
 	}
 }
 
-#define GAME_11_PLAYER_X_START 10 * 8
-#define GAME_11_PLAYER_Y_START 14 * 8 + 4
+BYTE start_buy_car_game() {
+	return 0;	
+}
+
+#define CENSOR_GAME_FIRST_LINE_Y 8 * 8
+#define CENSOR_GAME_FIRST_LINE_X 2 * 8
+
+BYTE start_censor_game() {
+	UBYTE word_locations[] = { // 10 words 2 locations
+		CENSOR_GAME_FIRST_LINE_X, CENSOR_GAME_FIRST_LINE_Y, // USA
+		CENSOR_GAME_FIRST_LINE_X + 4 * 8, CENSOR_GAME_FIRST_LINE_Y, // Gro
+		CENSOR_GAME_FIRST_LINE_X + 4 * 8 + 8 * 8, CENSOR_GAME_FIRST_LINE_Y, // Store
+		CENSOR_GAME_FIRST_LINE_X, CENSOR_GAME_FIRST_LINE_Y + 2 * 8, // FULL
+		CENSOR_GAME_FIRST_LINE_X + 5 * 8, CENSOR_GAME_FIRST_LINE_Y + 2 * 8, // THIS
+		CENSOR_GAME_FIRST_LINE_X + 5 * 8 + 5 * 8, CENSOR_GAME_FIRST_LINE_Y + 2 * 8, // IS
+		CENSOR_GAME_FIRST_LINE_X + 5 * 8 + 5 * 8 + 3 * 8, CENSOR_GAME_FIRST_LINE_Y + 2 * 8, // NOT
+		CENSOR_GAME_FIRST_LINE_X, CENSOR_GAME_FIRST_LINE_Y + 4 * 8, // TRUE
+		CENSOR_GAME_FIRST_LINE_X + 5 * 8, CENSOR_GAME_FIRST_LINE_Y + 4 * 8, // IN
+		CENSOR_GAME_FIRST_LINE_X + 5 * 8 + 3 * 8, CENSOR_GAME_FIRST_LINE_Y + 4 * 8, // USSR
+	};
+	BYTE current_index = 0;
+	BYTE success = 0;
+	
+	set_bkg_tiles(2, 6, censor_game_background_text_mapWidth, censor_game_background_text_mapHeight, censor_game_background_text_map);
+
+	_player_x = word_locations[current_index];
+	_player_y = word_locations[current_index + 1];
+
+	set_sprite_tile(MINIGAME_SPRITE_START + 0, VODKA_BOTTLE_TILE);
+
+	reset_timer();
+	show_timer();
+
+	while(_count > 0) {
+		wait_vbl_done();
+		step_timer();
+
+		if(joypad() & J_LEFT) {
+			waitpadup();
+			current_index -= 2;
+
+			if(current_index < 0) {
+				current_index = 18;
+			}
+
+			_player_x = word_locations[current_index];
+			_player_y = word_locations[current_index + 1];
+		}
+
+		if(joypad() & J_RIGHT) {
+			waitpadup();
+			current_index += 2;
+
+			if(current_index >= 20) {
+				current_index = 0;
+			}
+
+			_player_x = word_locations[current_index];
+			_player_y = word_locations[current_index + 1];
+		}
+
+		if(joypad() & J_A) {
+			waitpadup();
+			if(current_index == 0) {
+				initialise_8x8_sprite(
+					MINIGAME_SPRITE_START + 1,
+					FILLED_TILE, 
+					word_locations[current_index] + 8,
+					word_locations[current_index + 1]
+				);
+				initialise_8x8_sprite(
+					MINIGAME_SPRITE_START + 2,
+					FILLED_TILE,
+					word_locations[current_index] + 16,
+					word_locations[current_index + 1]
+				);
+				initialise_8x8_sprite(
+					MINIGAME_SPRITE_START + 3,
+					FILLED_TILE,
+					word_locations[current_index] + 24,
+					word_locations[current_index + 1]
+				);
+				success++;
+			} else if(current_index == 12) {
+				initialise_8x8_sprite(
+					MINIGAME_SPRITE_START + 4,
+					FILLED_TILE, 
+					word_locations[current_index] + 8,
+					word_locations[current_index + 1]
+				);
+				initialise_8x8_sprite(
+					MINIGAME_SPRITE_START + 5,
+					FILLED_TILE,
+					word_locations[current_index] + 16,
+					word_locations[current_index + 1]
+				);
+				initialise_8x8_sprite(
+					MINIGAME_SPRITE_START + 6,
+					FILLED_TILE,
+					word_locations[current_index] + 24,
+					word_locations[current_index + 1]
+				);
+				success++;
+			} else {
+				break;
+			}
+
+			if(success == 2) {
+				move_sprite(MINIGAME_SPRITE_START + 0, 0, 0);
+				delay(5000);
+				break;
+			}
+		}
+
+		move_sprite(MINIGAME_SPRITE_START + 0, _player_x, _player_y);
+	}
+
+	hide_timer();
+
+	clear_sprites(MINIGAME_SPRITE_START, 7);
+
+	return success == 2;
+}
+
+// Vote
+BYTE start_vote_game() {
+	BYTE state = 1;
+
+	set_bkg_tiles(3, 6, vote_game_voting_options_mapWidth, vote_game_voting_options_mapHeight, vote_game_voting_options_map);
+
+	_player_x = 4 * 8;
+	set_sprite_tile(MINIGAME_SPRITE_START + 0, GRATE_BACKGROUND_TILE);
+
+	reset_timer();
+	show_timer();
+
+	while (_count > 0 && !(joypad() & J_A)) {
+		wait_vbl_done();
+		step_timer();
+
+		if(joypad() & J_UP){
+			state--;
+			waitpadup();
+		}
+
+		if(joypad() & J_DOWN) {
+			state++;
+			waitpadup();
+		}
+
+		if(state > 1) {
+			state = 0;
+		} else if(state < 0) {
+			state = 1;
+		}
+
+		switch (state) {
+			case 0:
+				_player_y = 8 * 8;
+				break;
+			case 1:
+				_player_y = 11 * 8;
+				break;
+		}
+
+		move_sprite(MINIGAME_SPRITE_START + 0, _player_x, _player_y);
+	}
+
+	hide_timer();
+	
+	return state == 0;
+}
+
+#define LIE_GAME_PLAYER_X_START 10 * 8
+#define LIE_GAME_PLAYER_Y_START 14 * 8 + 4
 
 // LIE
-BYTE start_game_11() {
+BYTE start_lie_game() {
 	BYTE state = 0;
 
-	set_bkg_tiles(5, 3, game_11_background_textWidth, game_11_background_textHeight, game_11_background_text);
-	set_bkg_tiles(5, 10, game_11_buttonsWidth, game_11_buttonsHeight, game_11_buttons);
+	// Set up text
+	set_bkg_tiles(5, 3, lie_game_background_text_mapWidth, lie_game_background_text_mapHeight, lie_game_background_text_map);
+	set_bkg_tiles(5, 11, lie_game_buttons_mapWidth, lie_game_buttons_mapHeight, lie_game_buttons_map);
 
-	_player_x = GAME_11_PLAYER_X_START;
-	_player_y = GAME_11_PLAYER_Y_START;
+	_player_x = LIE_GAME_PLAYER_X_START;
+	_player_y = LIE_GAME_PLAYER_Y_START;
 	player_moved();
 
 	set_sprite_tile(MINIGAME_SPRITE_START + 0, VODKA_BOTTLE_TILE);
@@ -457,7 +637,7 @@ BYTE start_game_11() {
 	reset_timer();
 	show_timer();
 
-	while (1) {
+	while (_count > 0 && !(joypad() & J_A)) {
 		wait_vbl_done();
 		step_timer();
 
@@ -479,10 +659,6 @@ BYTE start_game_11() {
 			state = 1;
 		}
 
-		if(joypad() & J_A) {
-			break;
-		}
- 
 		switch (state)
 		{
 			case 0:
@@ -493,24 +669,24 @@ BYTE start_game_11() {
 				move_sprite(MINIGAME_SPRITE_START + 0, 11 * 8, 13 * 8);
 				break;
 		}
+	}
 
-		if(_count == 0) {
-			state = 1;
-			break;
-		}
-
+	if(_count == 0) {
+		state = 1;
 	}
 
 	if(state == 1) {
 		_player_x = 0;
 		set_sprite_tile(MINIGAME_SPRITE_START + 1, BULLET_TILE);
 
-		while (_player_x < GAME_11_PLAYER_X_START) {
+		while (_player_x < LIE_GAME_PLAYER_X_START) {
 			wait_vbl_done();
-			
+
 			_player_x++;
-			move_sprite(MINIGAME_SPRITE_START + 1, _player_x, GAME_11_PLAYER_Y_START);
+			move_sprite(MINIGAME_SPRITE_START + 1, _player_x, LIE_GAME_PLAYER_Y_START);
 		}
+
+		move_sprite(MINIGAME_SPRITE_START + 0, 0, 0);
 	}
 
 	hide_timer();
@@ -522,7 +698,7 @@ BYTE start_game_11() {
 #define GAME_10_MOVE_SPEED 2
 
 // Enter
-BYTE start_game_10() {
+BYTE start_enter_building_game() {
 	UBYTE active_bkg[NUMBER_OF_SCREEN_TILES * tank_backgroundHeight];
 	BYTE last_active_postion = 0;
 	BYTE tank_background_postion = 32;
@@ -610,14 +786,15 @@ BYTE start_game_10() {
 }
 
 // Subway game
-BYTE start_game_09() {
+BYTE start_subway_game() {
 	BYTE random_person_x = 84;
 	BYTE success = 0;
 
-	set_bkg_tiles(0, 0, subwayWidth, subwayHeight, subway);
+	set_bkg_tiles(0, 0, subway_background_mapWidth, subway_background_mapHeight, subway_background_map);
 
 	initialise_8x8_sprite(MINIGAME_SPRITE_START + 0, PLAYER_SAD_FACE_TILE, 0, 0);
-
+	
+	// Background moves to give subway train moving effect
 	move_bkg(12 * 8, 0);
 	reset_timer();
 	show_timer();
@@ -626,7 +803,7 @@ BYTE start_game_09() {
 	_player_y = 17 * 8;
 	player_moved();
 
-	while (1) {
+	while (_count > 0) {
 		wait_vbl_done();
 		step_timer();
 
@@ -668,15 +845,11 @@ BYTE start_game_09() {
 				break;
 			}
 		}
-
-		if(_count == 0) {
-			break;
-		}
 	}
 
 	hide_timer();
 
-	set_bkg_tiles(0, 0, subwayWidth, subwayHeight, subway);
+	set_bkg_tiles(0, 0, subway_background_mapWidth, subway_background_mapHeight, subway_background_map);
 
 	_count = 0;
 	while (_count < 64) {
@@ -695,18 +868,19 @@ BYTE start_game_09() {
 #define BUTTON_TOP_LEFT_X MIDDLE_X
 #define BUTTON_TOP_LEFT_Y MIDDLE_Y
 
-// Block game
-BYTE start_game_08() {
+BYTE start_block_game() {
 	BYTE direction = 1;
 	BYTE success = 0;
 
 	set_bkg_tiles(1, 14, block_game_backgroundWidth, block_game_backgroundHeight, block_game_background);
 
+	// Player controlled 
 	initialise_8x8_sprite(MINIGAME_SPRITE_START + 0, BRICK_ROOF_TILE, _player_x, _player_y + 0);
 	initialise_8x8_sprite(MINIGAME_SPRITE_START + 1, BRICK_TILE, _player_x, _player_y + 8);
 	initialise_8x8_sprite(MINIGAME_SPRITE_START + 2, BRICK_TILE,  _player_x, _player_y + 16);
 	
 	reset_timer();
+	show_timer();
 
 	_player_x = 5 * 8;
 	_player_y = 40;
@@ -752,32 +926,37 @@ BYTE start_game_08() {
 	move_sprite(MINIGAME_SPRITE_START + 1, 0, 0);
 	move_sprite(MINIGAME_SPRITE_START + 2, 0, 0);
 
+	hide_timer();
+
 	return !direction && _player_y == (8 * 16) && _player_x == 8 * 11;
 }
 
-// FIRE
-BYTE start_game_07() {
+BYTE start_fire_missle_game() {
 	_player_x = MIDDLE_X - 30;
 	_player_y = MIDDLE_Y + 4;
 
 	initialise_8x8_sprite(MINIGAME_SPRITE_START + 0, HAND_TILE, _player_x, _player_y);
 	set_sprite_prop(MINIGAME_SPRITE_START + 0, S_PRIORITY);
 
+	// Button top left
 	initialise_8x8_sprite(MINIGAME_SPRITE_START + 1, BUTTON_UP_TOP_LEFT_TILE, BUTTON_TOP_LEFT_X, BUTTON_TOP_LEFT_Y);
 
+	// Button top right
 	initialise_8x8_sprite(MINIGAME_SPRITE_START + 2, BUTTON_UP_TOP_LEFT_TILE, BUTTON_TOP_LEFT_X + 8, BUTTON_TOP_LEFT_Y);
 	set_sprite_prop(MINIGAME_SPRITE_START + 2, S_FLIPX);
 
+	// Button bottom left
 	initialise_8x8_sprite(MINIGAME_SPRITE_START + 3, BUTTON_UP_TOP_LEFT_TILE, BUTTON_TOP_LEFT_X, BUTTON_TOP_LEFT_Y + 8);
 	set_sprite_prop(MINIGAME_SPRITE_START + 3, S_FLIPY);
 
+	// Button bottom right
 	initialise_8x8_sprite(MINIGAME_SPRITE_START + 4, BUTTON_UP_TOP_LEFT_TILE, BUTTON_TOP_LEFT_X + 8, BUTTON_TOP_LEFT_Y + 8);
 	set_sprite_prop(MINIGAME_SPRITE_START + 4, S_FLIPX | S_FLIPY);
 
 	reset_timer();
 	show_timer();
 
-	while(1) {
+	while(_count > 0) {
 		wait_vbl_done();
 		step_timer();
 
@@ -785,6 +964,7 @@ BYTE start_game_07() {
 			_player_x++;
 			move_sprite(MINIGAME_SPRITE_START + 0, _player_x, _player_y);
 
+			// Button has been pressed
 			if(_player_x >= 79) {
 				set_sprite_tile(MINIGAME_SPRITE_START + 0, BUTTON_DOWN_TOP_LEFT_TILE);
 				set_sprite_tile(MINIGAME_SPRITE_START + 2, BUTTON_DOWN_TOP_LEFT_TILE);
@@ -798,13 +978,9 @@ BYTE start_game_07() {
 
 				print_text(MINIGAME_SPRITE_START, "LIFE  DEAD", 10, MIDDLE_X - (8 * 5), MIDDLE_Y);
 				delay(2000);
-				clear_text(MINIGAME_SPRITE_START, 9);
+				clear_sprites(MINIGAME_SPRITE_START, 9);
 				break;
 			}
-		}
-
-		if(_count == 0) {
-			break;
 		}
 	}
 
@@ -822,13 +998,15 @@ BYTE start_game_07() {
 #define POLE_START_Y MIDDLE_Y - 5
 
 // Raise Flag
-BYTE start_game_06() {
+BYTE start_raise_flag_game() {
 	BYTE success = 0;
 
 	_player_y = MIDDLE_Y + 24;
 
 	set_bkg_tiles(6, 11, building_00Width, building_00Height, building_00);
 
+	// This is used so it can overlay 
+	// Sprites used are out of order becuase I fucked it 
 	initialise_8x8_sprite(MINIGAME_SPRITE_START + 0, FLAG_POLE_TILE, POLE_START_X, POLE_START_Y);
 	initialise_8x8_sprite(MINIGAME_SPRITE_START + 1, FLAG_POLE_TILE, POLE_START_X, POLE_START_Y + 8);
 	initialise_8x8_sprite(MINIGAME_SPRITE_START + 2, FLAG_POLE_TILE, POLE_START_X, POLE_START_Y + 16);
@@ -850,7 +1028,7 @@ BYTE start_game_06() {
 
 	reset_timer();
 
-	while (1) {
+	while (!(joypad() & J_A || _player_y < POLE_START_Y - 8)) {
 		wait_vbl_done();
 
 		step_timer();
@@ -864,12 +1042,7 @@ BYTE start_game_06() {
 			move_sprite(MINIGAME_SPRITE_START + 8, MIDDLE_X + 24, _player_y);
 			move_sprite(MINIGAME_SPRITE_START + 9, MIDDLE_X + 24, _player_y + 8);
 		}
-
-		if(joypad() & J_A || _player_y < POLE_START_Y - 8) {
-			break;
-		}
 	}
-
 
 	if(_player_y >= POLE_START_Y && _player_y <= POLE_START_Y + 4) {
 		set_bkg_tiles(8, 2, soviet_symbol_bigWidth, soviet_symbol_bigHeight, soviet_symbol_big);
@@ -887,20 +1060,25 @@ BYTE start_game_06() {
 	return success;
 }
 
-#define GAME_04_TANK_BOTTOM_Y MAX_Y
+#define GAME_BUILD_TANK_GAME_TANK_BOTTOM_Y MAX_Y
 
-// Build tank
-BYTE start_game_05() {
+BYTE start_build_tank_game() {
 	_player_y = 50;
-	_player_x =  8 * (rand() % 2 == 0 ? ((UBYTE)2 + (UBYTE)rand() % ((UBYTE)5 - (UBYTE)2)) : ((UBYTE)14 + (UBYTE)rand() % ((UBYTE)18 - (UBYTE)14)));
+	// postion the turrent head
+	_player_x =  
+		8 * (rand() % 2 == 0 ? 
+			((UBYTE)2 + (UBYTE)rand() % ((UBYTE)5 - (UBYTE)2)) : 
+			((UBYTE)14 + (UBYTE)rand() % ((UBYTE)18 - (UBYTE)14)));
 
+	// Head
 	initialise_8x8_sprite(MINIGAME_SPRITE_START + 0, TANK_TOP_LEFT_TILE, MIDDLE_X, _player_y);
 	initialise_8x8_sprite(MINIGAME_SPRITE_START + 1, TANK_TOP_RIGHT_TILE, MIDDLE_X + 8, _player_y);
 
-	initialise_8x8_sprite(MINIGAME_SPRITE_START + 2, TANK_BOTTOM_LEFT_TILE, _player_x, GAME_04_TANK_BOTTOM_Y);
-	initialise_8x8_sprite(MINIGAME_SPRITE_START + 3, TANK_BOTTOM_RIGHT_TILE, _player_x + 8, GAME_04_TANK_BOTTOM_Y);
+	// Body
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 2, TANK_BOTTOM_LEFT_TILE, _player_x, GAME_BUILD_TANK_GAME_TANK_BOTTOM_Y);
+	initialise_8x8_sprite(MINIGAME_SPRITE_START + 3, TANK_BOTTOM_RIGHT_TILE, _player_x + 8, GAME_BUILD_TANK_GAME_TANK_BOTTOM_Y);
 
-
+	// This proably saves space?
 	for(_count = 1; _count < 18; _count++) {
 		set_bkg_tiles(_count, 7, building_background_00Width, building_background_00Height, building_background_00);
 	}
@@ -928,13 +1106,12 @@ BYTE start_game_05() {
 
 		move_sprite(MINIGAME_SPRITE_START + 0, MIDDLE_X, _player_y);
 		move_sprite(MINIGAME_SPRITE_START + 1, MIDDLE_X + 8, _player_y);
-		move_sprite(MINIGAME_SPRITE_START + 2, _player_x, GAME_04_TANK_BOTTOM_Y);
-		move_sprite(MINIGAME_SPRITE_START + 3, _player_x + 8, GAME_04_TANK_BOTTOM_Y);
+		move_sprite(MINIGAME_SPRITE_START + 2, _player_x, GAME_BUILD_TANK_GAME_TANK_BOTTOM_Y);
+		move_sprite(MINIGAME_SPRITE_START + 3, _player_x + 8, GAME_BUILD_TANK_GAME_TANK_BOTTOM_Y);
 
-		if(_player_y == GAME_04_TANK_BOTTOM_Y - 8) {
+		if(_player_y == GAME_BUILD_TANK_GAME_TANK_BOTTOM_Y - 8) {
 			break;
 		}
-
 	}
 
 	delay(1000);
@@ -951,11 +1128,9 @@ BYTE start_game_05() {
 
 #define NUMBER_OF_PROLETARIAT_GAME_04 4
 
-// Line
-BYTE start_game_04() {
+BYTE start_line_waiting_game() {
 	UBYTE proletariat_cords[NUMBER_OF_PROLETARIAT_GAME_04];
 	UBYTE i;
-	BYTE success = 1;
 
 	proletariat_cords[0] = MIDDLE_X_8x8 - 18;
 	initialise_8x8_sprite(MINIGAME_SPRITE_START, PLAYER_SAD_FACE_TILE, proletariat_cords[0], MIDDLE_Y_8x8);
@@ -976,7 +1151,7 @@ BYTE start_game_04() {
 	_player_y = MIDDLE_Y_8x8;
 	player_moved();
 	
-	while (success) {
+	while (_count > 0) {
 		wait_vbl_done();
 		step_timer();
 
@@ -987,7 +1162,6 @@ BYTE start_game_04() {
 			}
 
 			if(_player_x + 8u > proletariat_cords[i] && _player_x < proletariat_cords[i] + 8u) {
-				success = 0;
 				break;
 			}
 		}
@@ -996,11 +1170,6 @@ BYTE start_game_04() {
 			_player_x++;
 			player_moved();
 		}
-
-		if(_count == 0) {
-			break;
-		}
-
 	}
 
 	hide_player();
@@ -1010,11 +1179,12 @@ BYTE start_game_04() {
 		move_sprite(MINIGAME_SPRITE_START + i, 0, 0);
 	}
 
-	return success;
+	return _count == 0;
 }
 
-BYTE start_game_03() {
+BYTE start_launch_rocket_game() {
 	BYTE success = 0;
+	// used to wait for pad up without blocking
 	BYTE up_last_loop = 0;
 
 	_player_y = 66;
@@ -1027,7 +1197,7 @@ BYTE start_game_03() {
 	initialise_space_ship_sprite(MINIGAME_SPRITE_START);
 	move_16x40_sprite(MINIGAME_SPRITE_START, 85, _player_y);
 
-	while (1) {
+	while (_count > 0) {
 		wait_vbl_done();
 
 		step_timer();
@@ -1056,22 +1226,17 @@ BYTE start_game_03() {
 			_player_y++;
 			move_16x40_sprite(MINIGAME_SPRITE_START, 85, _player_y);
 		}
-
-		if(_count == 0) {
-			break;
-		}
 	}
 
 	hide_timer();
-	// Only clear tiles which have been fliped
-	clear_text(MINIGAME_SPRITE_START, 12);
+	clear_sprites(MINIGAME_SPRITE_START, 12);
 
 	return success;
 }
 
 #define NUMBER_OF_PROLETARIAT_GAME_02 3 * 2
 
-BYTE start_game_02() {
+BYTE start_unite_game() {
 	// 3 dudes 2 cords each
 	UBYTE proletariat_cords[NUMBER_OF_PROLETARIAT_GAME_02];
 	BYTE success = 0;
@@ -1094,7 +1259,7 @@ BYTE start_game_02() {
 	reset_timer();
 	show_timer();
 
-	while (1) {
+	while (_count > 0) {
 		wait_vbl_done();
 		step_timer();
 
@@ -1140,10 +1305,6 @@ BYTE start_game_02() {
 
 			}
 		} 
-
-		if(_count == 0) {
-			break;
-		}
 	}
 
 	hide_timer();
@@ -1155,7 +1316,7 @@ BYTE start_game_02() {
 	return success;
 }
 
-BYTE start_game_01() {
+BYTE start_shoot_game() {
 
 	set_bkg_tiles(11, 3, building_00Width, building_00Height, building_00);
 
@@ -1172,9 +1333,11 @@ BYTE start_game_01() {
 	reset_timer();
 	show_timer();
 
-	while (1) {
+	while (_count > 0) {
 		wait_vbl_done();
 		
+		step_timer();
+
 		if(joypad() & J_A) {
 			// Shoot first bullet
 			beep();
@@ -1200,35 +1363,24 @@ BYTE start_game_01() {
 			}
 
 			hide_player();
-			hide_timer();
 
 			delay(1000);
 
-			set_sprite_tile(MINIGAME_SPRITE_START, 0xFF);
-			set_sprite_tile(MINIGAME_SPRITE_START + 2, 0xFF);
-
-			return 1;
-		}
-
-		step_timer();
-		
-		if(_count == 0) {
 			break;
 		}
 	}
 
 	hide_timer();
 	hide_player();
-	set_sprite_tile(MINIGAME_SPRITE_START, 0xFF);
-	set_sprite_tile(MINIGAME_SPRITE_START + 1, 0xFF);
-	set_sprite_tile(MINIGAME_SPRITE_START + 2, 0xFF);
 
-	return 0;
+	move_sprite(MINIGAME_SPRITE_START, 0, 0);
+	move_sprite(MINIGAME_SPRITE_START + 1, 0, 0);
+	move_sprite(MINIGAME_SPRITE_START + 2, 0, 0);
+
+	return _count;
 }
 
-BYTE start_game_00() {
-	BYTE playing = 1;
-
+BYTE start_find_food_game() {
 	_player_x = MIDDLE_X_8x8;
 	_player_y = MIDDLE_Y_8x8;
 
@@ -1237,14 +1389,11 @@ BYTE start_game_00() {
 	reset_timer();
 	show_timer();
 
-	while (playing) {
+	while (_count > 0) {
 		wait_vbl_done();
 		process_movement();
 
 		step_timer();
-		if(_count == 0) {
-			playing = 0;
-		}
 	}
 
 	hide_timer();
@@ -1259,6 +1408,7 @@ void start_minigame_title(const char* text, UBYTE n) {
 	set_bkg_tiles(0, 0, mingame_title_mapWidth, mingame_title_mapHeight, mingame_title_map);
 	
 	print_text(MINIGAME_SPRITE_START, text, n, MIDDLE_X - ((n / 2) * 8), MIDDLE_Y);
+	print_UWORD_number(MINIGAME_SPRITE_START + n, MIDDLE_X - ((n / 2) * 8), 10, 10);
 
 	SHOW_BKG;
 
@@ -1273,13 +1423,7 @@ void start_minigame_title(const char* text, UBYTE n) {
 		wait_vbl_done();
 	}
 
-	clear_text(MINIGAME_SPRITE_START, n);
-}
-
-void initialise_sound() {
-	NR50_REG = 0xFF;
-	NR51_REG = 0xFF;
-	NR52_REG = 0x80;
+	clear_sprites(MINIGAME_SPRITE_START, n);
 }
 
 void play_game() {
@@ -1292,6 +1436,7 @@ void play_game() {
 		minigame_order[i] = i;
 	}
 
+	// Shuffle minigame
 	for (i = 0; i < NUMBER_OF_MINIGAMES - 1; i++) {
 		j = (UBYTE)rand();
 		j = i + (j / ((UBYTE)255 / ((UBYTE)NUMBER_OF_MINIGAMES - (UBYTE)i) + (UBYTE)1));
@@ -1311,58 +1456,67 @@ void play_game() {
 	while(1) {
 		wait_vbl_done();
 
-		// _next_minigame = minigame_order[i];
+		_next_minigame = minigame_order[i];
 		_next_minigame = 255;
 		i++;
 
 		switch (_next_minigame) {
 			case 0:
 				start_minigame_title("EAT", 3);
-				t = start_game_00();
+				t = start_find_food_game();
 				break;
 			case 1:
 				start_minigame_title("SHOOT", 5);
-				t = start_game_01();
+				t = start_shoot_game();
 				break;
 			case 2:
 				start_minigame_title("UNITE", 5);
-				t = start_game_02();
+				t = start_unite_game();
 				break;
 			case 3:
 				start_minigame_title("LAUNCH", 6);
-				t = start_game_03();
+				t = start_launch_rocket_game();
 				break;
 			case 4:
 				start_minigame_title("LINE", 4);
-				t = start_game_04();
+				t = start_line_waiting_game();
 				break;
 			case 5:
 				start_minigame_title("ARM", 3);
-				t = start_game_05();
+				t = start_build_tank_game();
 				break;
 			case 6:
 				start_minigame_title("RAISE", 5);
-				t = start_game_06();
+				t = start_raise_flag_game();
 				break;
 			case 7:
 				start_minigame_title("FIRE", 5);
-				t = start_game_07();
+				t = start_fire_missle_game();
 				break;
 			case 8:
 				start_minigame_title("BUILD", 5);
-				t = start_game_08();
+				t = start_block_game();
 				break;
 			case 9:
 				start_minigame_title("BOARD", 5);
-				t = start_game_09();
+				t = start_subway_game();
 				break;
 			case 10:
 				start_minigame_title("ENTER", 5);
-				t = start_game_10();
+				t = start_enter_building_game();
+				break;
+			case 11:
+				start_minigame_title("LIE", 3);
+				t = start_lie_game();
+				break;
+			case 12:
+				start_minigame_title("VOTE", 4);
+				t = start_vote_game();
 				break;
 			default:
-				start_minigame_title("LIE", 3);
-				t = start_game_11();
+				start_minigame_title("CENSOR", 6);
+				t = start_censor_game();
+				break;
 		}
 
 		if(t) {
@@ -1391,6 +1545,7 @@ void main_menu() {
 
 	SHOW_BKG;
 
+	// uses the timing of the player pressing the a button to get the seed
 	while (1) {
 		seed++;
 
@@ -1411,6 +1566,12 @@ void initalise_game() {
 	SPRITES_8x8;
 	DISPLAY_ON;
 	SHOW_SPRITES;
+}
+
+void initialise_sound() {
+	NR50_REG = 0xFF;
+	NR51_REG = 0xFF;
+	NR52_REG = 0x80;
 }
 
 void main() {
