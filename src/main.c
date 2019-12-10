@@ -20,6 +20,10 @@
 #include "../Resouces/lie_game_buttons_map.c"
 #include "../Resouces/vote_game_voting_options_map.c"
 #include "../Resouces/censor_game_background_text_map.c"
+#include "../Resouces/buy_car_game_background_map.c"
+#include "../Resouces/buy_car_game_text_map.c"
+#include "../Resouces/buy_car_game_text_response_map.c"
+#include "../Resouces/buy_car_game_text_final_map.c"
 
 #define MAX_X 160
 #define MAX_Y 144
@@ -32,7 +36,7 @@
 
 #define NUMBER_OF_SCREEN_TILES 32
 
-#define NUMBER_OF_MINIGAMES 13
+#define NUMBER_OF_MINIGAMES 15
 
 // ENEMY_NUMBERS
 #define NUMBER_OF_DEVILS 2
@@ -436,22 +440,134 @@ void print_UWORD_number(UBYTE starting_id, UWORD number, UBYTE x, UBYTE y) {
 	}
 	
 	for(; i < 4; i++) {
-		if(digits[i] == 0) {
-			continue;
-		}
 		set_sprite_tile(starting_id + i, DIGIT_START_TILE + digits[i]);
 		move_sprite(starting_id + i, x + (i * 8), y);
 	}
 }
 
+BYTE start_health_care_game() {
+	return 0;
+}
+
+#define text_background_tiles_array(NAME, ...) BYTE NAME[] = {get_tile_for_char(fmt), __VA_ARGS__}
+
+#define BUY_CAR_GAME_SALESMAN_X 96
+
+// TODO: Fix text tile maps to no include background 
 BYTE start_buy_car_game() {
-	return 0;	
+	BYTE year_map[] = {get_tile_for_char('Y'), get_tile_for_char('E'), get_tile_for_char('A'), get_tile_for_char('R')};
+	BYTE blank_map[] = {127};
+	UWORD year = 1960;
+	
+	set_bkg_tiles(0, 0, buy_car_game_background_mapWidth, buy_car_game_background_mapHeight, buy_car_game_background_map);
+	// Can I Buy A Car Comrade?
+
+	set_bkg_tiles(0, 2, 4, 1, year_map);
+	print_UWORD_number(MINIGAME_SPRITE_START + 0, year, 5 * 8, 4 * 8);
+	
+	reset_timer();
+	show_timer();
+
+	_player_y = 13 * 8;
+	_player_x = 1 * 8;
+	player_moved();
+
+	while (_count > 0) {
+		wait_vbl_done();
+		step_timer();
+
+		if(joypad() & J_LEFT &&  _player_x > 1 * 8) {
+			_player_x--;
+			player_moved();
+		}
+
+		if(joypad() & J_RIGHT && _player_x < BUY_CAR_GAME_SALESMAN_X) {
+			_player_x++;
+			player_moved();
+		}
+
+		if(joypad() & J_A && _player_x > BUY_CAR_GAME_SALESMAN_X - 16) {
+			waitpadup();
+			hide_timer();
+
+			set_bkg_tiles(0, 13, buy_car_game_text_mapWidth, buy_car_game_text_mapHeight, buy_car_game_text_map);
+			// Text consvation loop
+			waitpad(J_A);
+			waitpadup();
+			
+			set_bkg_tiles(0, 13, buy_car_game_text_response_mapWidth, buy_car_game_text_response_mapHeight, buy_car_game_text_response_map);
+			waitpad(J_A);
+			waitpadup();
+
+			set_bkg_tiles(18, 16, 1, 1, blank_map);
+
+			while (year < 1966){
+				year++;
+				print_UWORD_number(MINIGAME_SPRITE_START + 0, year, 5 * 8, 4 * 8);
+				// Some fucking reason it is doing this I cannot figure out why so that's why this is here
+				move_sprite(MINIGAME_SPRITE_START - 1, 0, 0);
+				delay(1000);
+			}
+
+			// No border
+			set_bkg_tiles(1, 14, buy_car_game_text_final_mapWidth, buy_car_game_text_final_mapHeight, buy_car_game_text_final_map);
+			waitpad(J_A);
+			waitpadup();
+
+			set_bkg_tiles(0, 0, buy_car_game_background_mapWidth, buy_car_game_background_mapHeight, buy_car_game_background_map);
+			set_bkg_tiles(0, 2, 4, 1, year_map);
+			hide_player();
+			
+			_player_y = 12 * 8;
+			_player_x = 7 * 8;
+
+			initialise_8x8_sprite(MINIGAME_SPRITE_START + 4, TANK_TOP_RIGHT_TILE, _player_x, _player_y);
+			set_sprite_prop(MINIGAME_SPRITE_START + 4, S_FLIPX);
+
+			initialise_8x8_sprite(MINIGAME_SPRITE_START + 5, TANK_TOP_LEFT_TILE, _player_x + 8, _player_y);
+			set_sprite_prop(MINIGAME_SPRITE_START + 5, S_FLIPX);
+
+			initialise_8x8_sprite(MINIGAME_SPRITE_START + 6, TANK_BOTTOM_RIGHT_TILE, _player_x, _player_y + 8);
+			set_sprite_prop(MINIGAME_SPRITE_START + 6, S_FLIPX);
+
+			initialise_8x8_sprite(MINIGAME_SPRITE_START + 7, TANK_BOTTOM_LEFT_TILE, _player_x + 8, _player_y + 8);
+			set_sprite_prop(MINIGAME_SPRITE_START + 7, S_FLIPX);
+
+			reset_timer();
+			show_timer();
+
+			while (_count != 0 && !(_player_x > MAX_X - 8)) {
+				wait_vbl_done();
+				step_timer();
+
+				if(joypad() & J_LEFT) {
+					_player_x--;
+				}
+
+				if((joypad() & J_RIGHT) && _player_x + 8 < 10 * 8) {
+					_player_x++;
+				}
+
+				move_16x16_sprite(MINIGAME_SPRITE_START + 4, _player_x, _player_y);
+			}
+
+			break;
+		}
+	}
+
+	hide_player();
+	hide_timer();
+	
+	clear_sprites(MINIGAME_SPRITE_START + 0, 9);
+
+	return _count != 0;
 }
 
 #define CENSOR_GAME_FIRST_LINE_Y 8 * 8
 #define CENSOR_GAME_FIRST_LINE_X 2 * 8
 
 BYTE start_censor_game() {
+	// Each words X and Y so the cursor can move between them reason
 	UBYTE word_locations[] = { // 10 words 2 locations
 		CENSOR_GAME_FIRST_LINE_X, CENSOR_GAME_FIRST_LINE_Y, // USA
 		CENSOR_GAME_FIRST_LINE_X + 4 * 8, CENSOR_GAME_FIRST_LINE_Y, // Gro
@@ -1457,7 +1573,7 @@ void play_game() {
 		wait_vbl_done();
 
 		_next_minigame = minigame_order[i];
-		_next_minigame = 255;
+		// _next_minigame = 255;
 		i++;
 
 		switch (_next_minigame) {
@@ -1513,9 +1629,13 @@ void play_game() {
 				start_minigame_title("VOTE", 4);
 				t = start_vote_game();
 				break;
-			default:
+			case 13:
 				start_minigame_title("CENSOR", 6);
 				t = start_censor_game();
+				break;
+			case 14:
+				start_minigame_title("BUY", 3);
+				t = start_buy_car_game();
 				break;
 		}
 
