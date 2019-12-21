@@ -456,7 +456,7 @@ void print_UWORD_number(UBYTE starting_id, UWORD number, UBYTE x, UBYTE y) {
 }
 
 void show_text(const BYTE* text, BYTE n) {
-	BYTE i, j, k, text_index, y;
+	BYTE i, j, k, y;
 	BYTE letter[18];
 
 	k = 0;
@@ -889,6 +889,8 @@ BYTE start_lie_game() {
 
 		move_sprite(MINIGAME_SPRITE_START + 0, 0, 0);
 	}
+
+	move_sprite(MINIGAME_SPRITE_START + 1, 0, 0);
 
 	hide_timer();
 	hide_player();
@@ -1361,7 +1363,7 @@ BYTE start_line_waiting_game() {
 				move_sprite(MINIGAME_SPRITE_START + i, proletariat_cords[i], MIDDLE_Y_8x8);
 			}
 
-			if(_player_x + 8u > proletariat_cords[i] && _player_x < proletariat_cords[i] + 8u) {
+			if(_player_x + (BYTE)8 > proletariat_cords[i] && _player_x < proletariat_cords[i] + (BYTE)8) {
 				break;
 			}
 		}
@@ -1375,9 +1377,7 @@ BYTE start_line_waiting_game() {
 	hide_player();
 	hide_timer();
 
-	for(i = 0; i < NUMBER_OF_PROLETARIAT_GAME_04; i++) {
-		move_sprite(MINIGAME_SPRITE_START + i, 0, 0);
-	}
+	clear_sprites(MINIGAME_SPRITE_START, 4);
 
 	return _count == 0;
 }
@@ -1657,7 +1657,6 @@ void play_game() {
 		wait_vbl_done();
 
 		_next_minigame = minigame_order[i];
-		_next_minigame = 9;
 		i++;
 
 		switch (_next_minigame) {
