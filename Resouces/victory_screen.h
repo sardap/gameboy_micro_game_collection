@@ -7,7 +7,7 @@
  Info:
    Section       : 
    Bank          : 0
-   Map size      : 12 x 7
+   Map size      : 14 x 9
    Tile set      : C:\Users\pfsar\OneDrive\Documents\GitHub\gameboy_micro_game_collection\Resouces\minigames_0.gbr
    Plane count   : 1 plane (8 bits)
    Plane order   : Tiles are continues
@@ -18,8 +18,8 @@
 
 */
 
-#define victory_screenWidth 12
-#define victory_screenHeight 7
+#define victory_screenWidth 14
+#define victory_screenHeight 9
 #define victory_screenBank 0
 
 extern unsigned char victory_screen[];

@@ -24,6 +24,9 @@
 #include "../Resouces/buy_car_game_text_map.c"
 #include "../Resouces/buy_car_game_text_response_map.c"
 #include "../Resouces/buy_car_game_text_final_map.c"
+#include "../Resouces/health_game_background_building_map.c"
+#include "../Resouces/health_care_inside_background_map.c"
+#include "../Resouces/speech_box_map.c"
 
 #define MAX_X 160
 #define MAX_Y 144
@@ -36,7 +39,7 @@
 
 #define NUMBER_OF_SCREEN_TILES 32
 
-#define NUMBER_OF_MINIGAMES 15
+#define NUMBER_OF_MINIGAMES 16
 
 // ENEMY_NUMBERS
 #define NUMBER_OF_DEVILS 2
@@ -54,6 +57,11 @@
 #define GOAL_FLAG_BOTTOM_TILE 2
 
 #define ALPHABET_START_TILE 3
+#define QUESTION_MARK_TILE 104
+#define COLON_TILE 108
+#define DOT_DOT_DOT_TILE 109
+#define FULL_STOP_TILE 110
+#define DASH_TILE 111
 #define DIGIT_START_TILE 39
 
 #define BULLET_TILE 38
@@ -100,6 +108,8 @@
 #define HEALTH_TILE 8
 
 #define GRATE_BACKGROUND_TILE 82
+
+#define TABLE_TILE 107
 
 #define FILLED_TILE 106
 
@@ -308,7 +318,7 @@ void hide_health() {
 void game_success() {
 	set_bkg_tiles(0, 0, mingame_title_mapWidth, mingame_title_mapHeight, mingame_title_map);
 
-	set_bkg_tiles(4, 4, victory_screenWidth, victory_screenHeight, victory_screen);
+	set_bkg_tiles(2, 2, victory_screenWidth, victory_screenHeight, victory_screen);
 
 	set_bkg_tiles(8, 11, soviet_symbol_bigWidth, soviet_symbol_bigHeight, soviet_symbol_big);
 
@@ -320,7 +330,7 @@ void game_success() {
 void game_over() {
 	set_bkg_tiles(0, 0, mingame_title_mapWidth, mingame_title_mapHeight, mingame_title_map);
 	
-	set_bkg_tiles(5, 4, game_over_mapWidth, game_over_mapHeight, game_over_map);
+	set_bkg_tiles(3, 2, game_over_mapWidth, game_over_mapHeight, game_over_map);
 
 	waitpad(J_A);
 	waitpadup();
@@ -385,7 +395,7 @@ void step_timer() {
 	seconds = _count / 60;
 	first_digit = seconds % 10;
 	second_digit = seconds / 10;
-
+	
 	set_sprite_tile(TIMER_FIRST_DIGIT, DIGIT_START_TILE + second_digit);
 
 	set_sprite_tile(TIMER_SECOND_DIGIT, DIGIT_START_TILE + first_digit);
@@ -445,8 +455,127 @@ void print_UWORD_number(UBYTE starting_id, UWORD number, UBYTE x, UBYTE y) {
 	}
 }
 
+void show_text(const BYTE* text, BYTE n) {
+	BYTE i, j, k, text_index, y;
+	BYTE letter[18];
+
+	k = 0;
+	y = 14;
+	for(i = 0; i < n;) {
+		set_bkg_tiles(0, 13, speech_box_mapWidth, speech_box_mapHeight, speech_box_map);
+		
+		for(j = 0; j < 3 && i < n; j += 2) {
+			for(k = 0; k < 17; k++) {
+				if(k + i < n) {
+					letter[k] = text[k + i];
+
+					switch (letter[k]) {
+						case '?':
+							letter[k] = QUESTION_MARK_TILE;
+							break;
+						case ':':
+							letter[k] = COLON_TILE;
+							break;
+						case '.':
+							letter[k] = FULL_STOP_TILE;
+							break;
+						case '@':
+							letter[k] = DOT_DOT_DOT_TILE;
+							break;
+						default:
+							letter[k] = ALPHABET_START_TILE + (letter[k] - 'A'); //get_tile_for_char(letter[0]);
+							break;
+					}
+				}
+				else {
+					letter[k] = BLANK_TILE;
+				}
+			}
+
+			if(k + i < n && text[k + i - 1] != ' ' && text[k + i + 1] != ' ') {
+				letter[17] = DASH_TILE;
+			} else {
+				letter[17] = j == 2 ? DOT_DOT_DOT_TILE : BLANK_TILE;
+			}
+
+			i += k;
+
+			set_bkg_tiles(1, y + j, 18, 1, letter);
+		}
+
+		waitpad(J_A);
+		waitpadup();
+	}
+}
+
+#define HEALTH_GAME_INSIDE_FLOOR_HEIGHT 13 * 8
+#define HEALTH_GAME_TABLE_X 14 * 8
+
 BYTE start_health_care_game() {
-	return 0;
+	// MONEY 0
+	BYTE money_map[] = {get_tile_for_char('M'), get_tile_for_char('O'), get_tile_for_char('N'), get_tile_for_char('E'), get_tile_for_char('Y'), BLANK_TILE, DIGIT_START_TILE};
+	BYTE inside = 0;
+
+
+	set_bkg_tiles(0, 0, health_game_background_building_mapWidth, health_game_background_building_mapHeight, health_game_background_building_map);
+
+	set_bkg_tiles(1, 2, 7, 1, money_map);
+
+	show_timer();
+	reset_timer();
+
+	_player_x = 16;
+	_player_y = 13 * 8;
+	
+	while (_count > 0) {
+		wait_vbl_done();
+		step_timer();
+
+		if(joypad() & J_LEFT && _player_x > 16) {
+			_player_x--;
+		}
+
+		if(joypad() & J_RIGHT && ((inside && _player_x < HEALTH_GAME_TABLE_X - 8) || (!inside && _player_x < MAX_X))) {
+			_player_x++;
+		}
+
+		if(joypad() & J_A && inside && _player_x > HEALTH_GAME_TABLE_X - 16) {
+			waitpadup();
+			show_text("COMO VLAD: HELLO COMRADE GLORY TO THE STATE HOW CAN I HELP YOU?", 63);
+			show_text("COMO YOU: I AM SICK COMRADE AND NEED DOCTOR.", 43);
+			show_text("COMO VLAD: YOU WILL NEED TO WAIT BUT YOU WILL BE HEALED.", 55);
+			show_text("COMO YOU: GLORY TO THE STATE.", 28);
+			show_text("COMO VLAD: GLORY TO THE STATE.", 29);
+			
+			set_bkg_tiles(0, 13, speech_box_mapWidth, speech_box_mapHeight, speech_box_map);
+			set_bkg_tiles(8, 2, soviet_symbol_bigWidth, soviet_symbol_bigHeight, soviet_symbol_big);
+
+			delay(5000);
+			
+			break;
+		}
+
+		if(joypad() & J_UP && !inside && _player_x > 112 && _player_x < 112 + 16) {
+			// Change to inside building
+			set_bkg_tiles(0, 0, health_care_inside_background_mapWidth, health_care_inside_background_mapHeight, health_care_inside_background_map);
+
+			initialise_8x8_sprite(MINIGAME_SPRITE_START + 0, PLAYER_SAD_FACE_TILE, HEALTH_GAME_TABLE_X + 8, HEALTH_GAME_INSIDE_FLOOR_HEIGHT);
+			initialise_8x8_sprite(MINIGAME_SPRITE_START + 2, VODKA_BOTTLE_TILE, HEALTH_GAME_TABLE_X + 8, HEALTH_GAME_INSIDE_FLOOR_HEIGHT + 8);
+			initialise_8x8_sprite(MINIGAME_SPRITE_START + 1, TABLE_TILE, HEALTH_GAME_TABLE_X, HEALTH_GAME_INSIDE_FLOOR_HEIGHT);
+
+			_player_x = 16;
+
+			inside = 1;
+		}
+
+		player_moved();
+	}
+
+	hide_timer();
+	hide_player();
+	clear_sprites(MINIGAME_SPRITE_START, 3);
+
+	return _count > 0;
 }
 
 #define text_background_tiles_array(NAME, ...) BYTE NAME[] = {get_tile_for_char(fmt), __VA_ARGS__}
@@ -563,30 +692,22 @@ BYTE start_buy_car_game() {
 	return _count != 0;
 }
 
-#define CENSOR_GAME_FIRST_LINE_Y 8 * 8
-#define CENSOR_GAME_FIRST_LINE_X 2 * 8
+#define CENSOR_GAME_FIRST_LINE_X 2
 
 BYTE start_censor_game() {
-	// Each words X and Y so the cursor can move between them reason
-	UBYTE word_locations[] = { // 10 words 2 locations
-		CENSOR_GAME_FIRST_LINE_X, CENSOR_GAME_FIRST_LINE_Y, // USA
-		CENSOR_GAME_FIRST_LINE_X + 4 * 8, CENSOR_GAME_FIRST_LINE_Y, // Gro
-		CENSOR_GAME_FIRST_LINE_X + 4 * 8 + 8 * 8, CENSOR_GAME_FIRST_LINE_Y, // Store
-		CENSOR_GAME_FIRST_LINE_X, CENSOR_GAME_FIRST_LINE_Y + 2 * 8, // FULL
-		CENSOR_GAME_FIRST_LINE_X + 5 * 8, CENSOR_GAME_FIRST_LINE_Y + 2 * 8, // THIS
-		CENSOR_GAME_FIRST_LINE_X + 5 * 8 + 5 * 8, CENSOR_GAME_FIRST_LINE_Y + 2 * 8, // IS
-		CENSOR_GAME_FIRST_LINE_X + 5 * 8 + 5 * 8 + 3 * 8, CENSOR_GAME_FIRST_LINE_Y + 2 * 8, // NOT
-		CENSOR_GAME_FIRST_LINE_X, CENSOR_GAME_FIRST_LINE_Y + 4 * 8, // TRUE
-		CENSOR_GAME_FIRST_LINE_X + 5 * 8, CENSOR_GAME_FIRST_LINE_Y + 4 * 8, // IN
-		CENSOR_GAME_FIRST_LINE_X + 5 * 8 + 3 * 8, CENSOR_GAME_FIRST_LINE_Y + 4 * 8, // USSR
-	};
 	BYTE current_index = 0;
-	BYTE success = 0;
-	
-	set_bkg_tiles(2, 6, censor_game_background_text_mapWidth, censor_game_background_text_mapHeight, censor_game_background_text_map);
+	BYTE i, j;
+	BYTE censor_game_text[] = " USA GOOD USSR BAD";
+	BYTE word_tiles[18];
 
-	_player_x = word_locations[current_index];
-	_player_y = word_locations[current_index + 1];
+	for(i = 0; i < 18; i++) {
+		word_tiles[i] = censor_game_text[i] == ' ' ? BLANK_TILE : ALPHABET_START_TILE + (censor_game_text[i] - 'A');
+	}
+
+	set_bkg_tiles(1, 6, 18, 1, word_tiles);
+
+	_player_x = (2 + current_index) * 8;
+	_player_y = 8 * 8;
 
 	set_sprite_tile(MINIGAME_SPRITE_START + 0, VODKA_BOTTLE_TILE);
 
@@ -599,79 +720,42 @@ BYTE start_censor_game() {
 
 		if(joypad() & J_LEFT) {
 			waitpadup();
-			current_index -= 2;
+			current_index--;
 
 			if(current_index < 0) {
-				current_index = 18;
+				current_index = 14;
+			} else {
+				while (censor_game_text[current_index] != ' ') {
+					current_index--;
+				}
 			}
 
-			_player_x = word_locations[current_index];
-			_player_y = word_locations[current_index + 1];
+			_player_x = (2 + current_index) * 8;
 		}
 
 		if(joypad() & J_RIGHT) {
 			waitpadup();
-			current_index += 2;
+			current_index++;
 
-			if(current_index >= 20) {
+			if(current_index > 14) {
 				current_index = 0;
+			} else {
+				while (censor_game_text[current_index] != ' ') {
+					current_index++;
+				}
 			}
 
-			_player_x = word_locations[current_index];
-			_player_y = word_locations[current_index + 1];
+			_player_x = (2 + current_index) * 8;
 		}
 
 		if(joypad() & J_A) {
 			waitpadup();
-			if(current_index == 0) {
-				initialise_8x8_sprite(
-					MINIGAME_SPRITE_START + 1,
-					FILLED_TILE, 
-					word_locations[current_index] + 8,
-					word_locations[current_index + 1]
-				);
-				initialise_8x8_sprite(
-					MINIGAME_SPRITE_START + 2,
-					FILLED_TILE,
-					word_locations[current_index] + 16,
-					word_locations[current_index + 1]
-				);
-				initialise_8x8_sprite(
-					MINIGAME_SPRITE_START + 3,
-					FILLED_TILE,
-					word_locations[current_index] + 24,
-					word_locations[current_index + 1]
-				);
-				success++;
-			} else if(current_index == 12) {
-				initialise_8x8_sprite(
-					MINIGAME_SPRITE_START + 4,
-					FILLED_TILE, 
-					word_locations[current_index] + 8,
-					word_locations[current_index + 1]
-				);
-				initialise_8x8_sprite(
-					MINIGAME_SPRITE_START + 5,
-					FILLED_TILE,
-					word_locations[current_index] + 16,
-					word_locations[current_index + 1]
-				);
-				initialise_8x8_sprite(
-					MINIGAME_SPRITE_START + 6,
-					FILLED_TILE,
-					word_locations[current_index] + 24,
-					word_locations[current_index + 1]
-				);
-				success++;
-			} else {
-				break;
-			}
 
-			if(success == 2) {
-				move_sprite(MINIGAME_SPRITE_START + 0, 0, 0);
-				delay(5000);
-				break;
+			for(j = current_index + 1; censor_game_text[j] != ' ' && j < 18; j++) {
+				word_tiles[j] = word_tiles[j] == FILLED_TILE ? ALPHABET_START_TILE + (censor_game_text[j] - 'A') : FILLED_TILE;
 			}
+			
+			set_bkg_tiles(1, 6, 18, 1, word_tiles);
 		}
 
 		move_sprite(MINIGAME_SPRITE_START + 0, _player_x, _player_y);
@@ -680,8 +764,9 @@ BYTE start_censor_game() {
 	hide_timer();
 
 	clear_sprites(MINIGAME_SPRITE_START, 7);
-
-	return success == 2;
+ 
+	// USA BAD ^ GOOD USSR
+	return (word_tiles[5] == FILLED_TILE && word_tiles[10] == FILLED_TILE) ^ (word_tiles[1] == FILLED_TILE && word_tiles[15] == FILLED_TILE);
 }
 
 // Vote
@@ -955,7 +1040,7 @@ BYTE start_subway_game() {
 				break;
 			}
 
-			if(_player_x >= 80 && _player_x <= 84) {
+			if(joypad() & J_UP && _player_x >= 80 && _player_x <= 88) {
 				hide_player();				
 				success = 1;
 				break;
@@ -996,7 +1081,6 @@ BYTE start_block_game() {
 	initialise_8x8_sprite(MINIGAME_SPRITE_START + 2, BRICK_TILE,  _player_x, _player_y + 16);
 	
 	reset_timer();
-	show_timer();
 
 	_player_x = 5 * 8;
 	_player_y = 40;
@@ -1006,7 +1090,7 @@ BYTE start_block_game() {
 
 		step_timer();
 
-		if(_count % 2 == 0) {
+		if(_count % 4 == 0) {
 			_player_y++;
 		} else {
 			continue;
@@ -1144,7 +1228,7 @@ BYTE start_raise_flag_game() {
 
 	reset_timer();
 
-	while (!(joypad() & J_A || _player_y < POLE_START_Y - 8)) {
+	while (!(joypad() & (J_A | J_B | J_LEFT ) || _player_y < POLE_START_Y - 8)) {
 		wait_vbl_done();
 
 		step_timer();
@@ -1573,7 +1657,7 @@ void play_game() {
 		wait_vbl_done();
 
 		_next_minigame = minigame_order[i];
-		// _next_minigame = 255;
+		_next_minigame = 9;
 		i++;
 
 		switch (_next_minigame) {
@@ -1636,6 +1720,10 @@ void play_game() {
 			case 14:
 				start_minigame_title("BUY", 3);
 				t = start_buy_car_game();
+				break;
+			default:
+				start_minigame_title("HEALTH", 6);
+				t = start_health_care_game();
 				break;
 		}
 

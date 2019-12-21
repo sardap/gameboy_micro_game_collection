@@ -1,13 +1,13 @@
 /*
 
- CENSOR_GAME_BACKGROUND_TEXT_MAP.H
+ HEALTH_CARE_INSIDE_BACKGROUND_MAP.H
 
  Map Include File.
 
  Info:
    Section       : 
    Bank          : 0
-   Map size      : 17 x 1
+   Map size      : 20 x 18
    Tile set      : C:\Users\pfsar\OneDrive\Documents\GitHub\gameboy_micro_game_collection\Resouces\minigames_0.gbr
    Plane count   : 1 plane (8 bits)
    Plane order   : Tiles are continues
@@ -18,10 +18,10 @@
 
 */
 
-#define censor_game_background_text_mapWidth 17
-#define censor_game_background_text_mapHeight 1
-#define censor_game_background_text_mapBank 0
+#define health_care_inside_background_mapWidth 20
+#define health_care_inside_background_mapHeight 18
+#define health_care_inside_background_mapBank 0
 
-extern unsigned char censor_game_background_text_map[];
+extern unsigned char health_care_inside_background_map[];
 
-/* End of CENSOR_GAME_BACKGROUND_TEXT_MAP.H */
+/* End of HEALTH_CARE_INSIDE_BACKGROUND_MAP.H */

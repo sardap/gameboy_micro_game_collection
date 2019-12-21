@@ -7,7 +7,7 @@
  Info:
    Section       : 
    Bank          : 0
-   Map size      : 10 x 7
+   Map size      : 12 x 9
    Tile set      : C:\Users\pfsar\OneDrive\Documents\GitHub\gameboy_micro_game_collection\Resouces\minigames_0.gbr
    Plane count   : 1 plane (8 bits)
    Plane order   : Tiles are continues
@@ -18,8 +18,8 @@
 
 */
 
-#define game_over_mapWidth 10
-#define game_over_mapHeight 7
+#define game_over_mapWidth 12
+#define game_over_mapHeight 9
 #define game_over_mapBank 0
 
 extern unsigned char game_over_map[];
