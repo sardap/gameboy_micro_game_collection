@@ -2,6 +2,7 @@
 
 ## Building
 Run ```make``` in src dir.
+You will need [gbdk](http://gbdk.sourceforge.net/) if you are on windows don't even try to install just use wsl.
 
 ## Running
 Run ```Main.gb``` in any gameboy emulator
