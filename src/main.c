@@ -3,14 +3,38 @@
 #include <rand.h>
 #include "types.h"
 
-#include "../Resouces/minigames_0.c"
+
+#define CLEAN=1 
+
+#ifdef CLEAN
+	#include "../Resouces/minigames_0_clean.c"
+#else
+	#include "../Resouces/minigames_0.c"
+#endif
+
 #include "../Resouces/mingame_title_map.c"
-#include "../Resouces/game_title_map.c"
+
+#ifdef CLEAN
+	#include "../Resouces/game_title_map_clean.c"
+#else
+	#include "../Resouces/game_title_map.c"
+#endif
+
 #include "../Resouces/building_00.c"
 #include "../Resouces/green_sqaure.c"
 #include "../Resouces/victory_screen.c"
-#include "../Resouces/soviet_symbol_big.c"
-#include "../Resouces/game_over.c"
+#ifdef CLEAN
+	#include "../Resouces/soviet_symbol_big_clean.c"
+#else
+	#include "../Resouces/soviet_symbol_big.c"
+#endif
+
+#ifdef CLEAN
+	#include "../Resouces/game_over_clean.c"
+#else
+	#include "../Resouces/game_over.c"
+#endif
+
 #include "../Resouces/building_background_00.c"
 #include "../Resouces/block_game_background.c"
 #include "../Resouces/subway_background_map.c"
@@ -352,8 +376,11 @@ void minigame_fail() {
 
 		print_text(MINIGAME_SPRITE_START + MAX_HEALTH, "YOU HAVE", 8, MIDDLE_X - ((8 / 2) * 8), MIDDLE_Y);
 		print_text(MINIGAME_SPRITE_START + MAX_HEALTH + 8, "FAILLED", 7, MIDDLE_X - ((7 / 2) * 8), MIDDLE_Y + 9);
+#ifdef CLEAN
+		print_text(MINIGAME_SPRITE_START + MAX_HEALTH + 8 + 7, "THE MONEY", 9, MIDDLE_X - ((9 / 2) * 8), MIDDLE_Y + 18);
+#else
 		print_text(MINIGAME_SPRITE_START + MAX_HEALTH + 8 + 7, "THE STATE", 9, MIDDLE_X - ((9 / 2) * 8), MIDDLE_Y + 18);
-		
+#endif		
 		delay(1200);
 
 		hide_health();
@@ -541,11 +568,19 @@ BYTE start_health_care_game() {
 
 		if(joypad() & J_A && inside && _player_x > HEALTH_GAME_TABLE_X - 16) {
 			waitpadup();
+#ifdef CLEAN
+			show_text("CAPO JOHN: HELLO GLORY TO THE MONEY HOW CAN I HELP YOU?", 63);
+			show_text("CAPO YOU: I AM SICK AND NEED DOCTOR.", 43);
+			show_text("CAPO JOHN: DO YOU HAVE MONEY?", 55);
+			show_text("CAPO YOU: NO.", 28);
+			show_text("CAPO JOHN: FUCK YOU I HAVE MINE.", 29);
+#else
 			show_text("COMO VLAD: HELLO COMRADE GLORY TO THE STATE HOW CAN I HELP YOU?", 63);
 			show_text("COMO YOU: I AM SICK COMRADE AND NEED DOCTOR.", 43);
 			show_text("COMO VLAD: YOU WILL NEED TO WAIT BUT YOU WILL BE HEALED.", 55);
 			show_text("COMO YOU: GLORY TO THE STATE.", 28);
 			show_text("COMO VLAD: GLORY TO THE STATE.", 29);
+#endif
 			
 			set_bkg_tiles(0, 13, speech_box_mapWidth, speech_box_mapHeight, speech_box_map);
 			set_bkg_tiles(8, 2, soviet_symbol_bigWidth, soviet_symbol_bigHeight, soviet_symbol_big);

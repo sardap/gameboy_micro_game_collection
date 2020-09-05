@@ -54,5 +54,6 @@ dkms.conf
 *.gb
 *.lst
 *.sym
+bin/
 
 .vscode/
