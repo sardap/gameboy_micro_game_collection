@@ -22,7 +22,11 @@
 
 #include "../Resouces/building_00.c"
 #include "../Resouces/green_sqaure.c"
-#include "../Resouces/victory_screen.c"
+#ifdef CLEAN
+	#include "../Resouces/victory_screen_clean.c"
+#else
+	#include "../Resouces/victory_screen.c"
+#endif
 #ifdef CLEAN
 	#include "../Resouces/soviet_symbol_big_clean.c"
 #else
@@ -1694,6 +1698,8 @@ void play_game() {
 
 	while(1) {
 		wait_vbl_done();
+
+		game_success();
 
 		_next_minigame = minigame_order[i];
 		i++;
