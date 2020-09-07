@@ -4,7 +4,7 @@
 #include "types.h"
 
 
-#define CLEAN=1 
+#define CLEAN=1
 
 #ifdef CLEAN
 	#include "../Resouces/minigames_0_clean.c"
@@ -569,17 +569,17 @@ BYTE start_health_care_game() {
 		if(joypad() & J_A && inside && _player_x > HEALTH_GAME_TABLE_X - 16) {
 			waitpadup();
 #ifdef CLEAN
-			show_text("CAPO JOHN: HELLO GLORY TO THE MONEY HOW CAN I HELP YOU?", 63);
-			show_text("CAPO YOU: I AM SICK AND NEED DOCTOR.", 43);
-			show_text("CAPO JOHN: DO YOU HAVE MONEY?", 55);
-			show_text("CAPO YOU: NO.", 28);
-			show_text("CAPO JOHN: FUCK YOU I HAVE MINE.", 29);
+			show_text("CAPO JOHN: HI GLORY TO THE MONEY HOW CAN I HELP YOU?", 52);
+			show_text("CAPO YOU:I AM SICK AND NEED DOCTOR", 34);
+			show_text("CAPO JOHN: DO YOU HAVE MONEY?", 29);
+			show_text("CAPO YOU: NO WORK AT AMAZON", 27);
+			show_text("CAPO JOHN: FUCK YOU I HAVE MINE.", 32);
 #else
 			show_text("COMO VLAD: HELLO COMRADE GLORY TO THE STATE HOW CAN I HELP YOU?", 63);
 			show_text("COMO YOU: I AM SICK COMRADE AND NEED DOCTOR.", 43);
 			show_text("COMO VLAD: YOU WILL NEED TO WAIT BUT YOU WILL BE HEALED.", 55);
 			show_text("COMO YOU: GLORY TO THE STATE.", 28);
-			show_text("COMO VLAD: GLORY TO THE STATE.", 29);
+			show_text("COMO VLAD: GLORY TO THE STATE.", 30);
 #endif
 			
 			set_bkg_tiles(0, 13, speech_box_mapWidth, speech_box_mapHeight, speech_box_map);
@@ -850,7 +850,11 @@ BYTE start_vote_game() {
 
 	hide_timer();
 	
+#ifdef CLEAN
+	return state == 1;
+#else
 	return state == 0;
+#endif
 }
 
 #define LIE_GAME_PLAYER_X_START 10 * 8
@@ -1696,7 +1700,11 @@ void play_game() {
 
 		switch (_next_minigame) {
 			case 0:
+#ifdef CLEAN
+				start_minigame_title("WALK", 4);
+#else
 				start_minigame_title("EAT", 3);
+#endif
 				t = start_find_food_game();
 				break;
 			case 1:
@@ -1724,7 +1732,7 @@ void play_game() {
 				t = start_raise_flag_game();
 				break;
 			case 7:
-				start_minigame_title("FIRE", 5);
+				start_minigame_title("NUKE", 4);
 				t = start_fire_missle_game();
 				break;
 			case 8:
@@ -1740,7 +1748,11 @@ void play_game() {
 				t = start_enter_building_game();
 				break;
 			case 11:
+#ifdef CLEAN
 				start_minigame_title("LIE", 3);
+#else
+				start_minigame_title("TRUTH", 5);
+#endif
 				t = start_lie_game();
 				break;
 			case 12:
@@ -1748,7 +1760,11 @@ void play_game() {
 				t = start_vote_game();
 				break;
 			case 13:
+#ifdef CLEAN
+				start_minigame_title("FIX", 3);
+#else
 				start_minigame_title("CENSOR", 6);
+#endif
 				t = start_censor_game();
 				break;
 			case 14:
