@@ -1,7 +1,7 @@
 # gameboy_micro_game_collection
 
 ## Building
-Run ```make``` in src dir.
+Run ```make```.
 You will need [gbdk](http://gbdk.sourceforge.net/) if you are on windows don't even try to install just use wsl.
 
 ## Running
